@@ -1,0 +1,21 @@
+<div style="display: flex; min-height: 100vh; font-family: sans-serif;">
+  <aside style="width: 220px; background: #1e293b; color: white; padding: 20px;">
+    <h3 style="margin-bottom: 24px;">🚗 VB System</h3>
+    <nav style="display: flex; flex-direction: column; gap: 8px;">
+      <a routerLink="/dashboard" routerLinkActive="active-link" style="color: #cbd5e1; text-decoration: none; padding: 8px;">Dashboard</a>
+      <a routerLink="/vehicles" routerLinkActive="active-link" style="color: #cbd5e1; text-decoration: none; padding: 8px;">Kendaraan</a>
+      <a routerLink="/bookings" routerLinkActive="active-link" style="color: #cbd5e1; text-decoration: none; padding: 8px;">Pemesanan</a>
+      @if (auth.isApprover()) {
+        <a routerLink="/approvals" routerLinkActive="active-link" style="color: #cbd5e1; text-decoration: none; padding: 8px;">Approval</a>
+      }
+    </nav>
+  </aside>
+
+  <main style="flex: 1; padding: 24px; background: #f9fafb;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+      <span>Halo, <strong>{{ auth.currentUser()?.name }}</strong> ({{ auth.currentUser()?.role }})</span>
+      <button (click)="auth.logout()" style="padding: 6px 14px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">Logout</button>
+    </div>
+    <router-outlet></router-outlet>
+  </main>
+</div>

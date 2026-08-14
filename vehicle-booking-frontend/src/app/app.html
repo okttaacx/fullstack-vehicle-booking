@@ -1,0 +1,81 @@
+<div style="padding: 30px; font-family: sans-serif; max-width: 900px; margin: 0 auto;">
+  <h1>🚗 Vehicle Booking</h1>
+
+  @if (!isLoggedIn) {
+    <!-- FORM LOGIN -->
+    <div style="max-width: 350px; margin-top: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+      <h2>Login</h2>
+
+      <div style="margin-bottom: 12px;">
+        <label>Username</label><br>
+        <input
+          type="text"
+          [(ngModel)]="username"
+          name="username"
+          style="width: 100%; padding: 8px; box-sizing: border-box;"
+        >
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label>Password</label><br>
+        <input
+          type="password"
+          [(ngModel)]="password"
+          name="password"
+          style="width: 100%; padding: 8px; box-sizing: border-box;"
+        >
+      </div>
+
+      @if (loginError) {
+        <p style="color: red;">{{ loginError }}</p>
+      }
+
+      <button
+        (click)="doLogin()"
+        style="width: 100%; padding: 10px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;"
+      >
+        Login
+      </button>
+    </div>
+  } @else {
+    <!-- SETELAH LOGIN -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <p>Halo, <strong>{{ currentUser?.username || currentUser?.name }}</strong> 👋</p>
+      <button
+        (click)="logout()"
+        style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;"
+      >
+        Logout
+      </button>
+    </div>
+
+    <h2>Daftar Kendaraan (Tarik dari CI4 API)</h2>
+
+    <table border="1" cellpadding="10" style="border-collapse: collapse; width: 100%;">
+      <thead style="background-color: #f2f2f2;">
+        <tr>
+          <th>Nama Kendaraan</th>
+          <th>Plat Nomor</th>
+          <th>Tipe Angkutan</th>
+          <th>Konsumsi BBM</th>
+          <th>Status Milik</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (v of vehicles; track v.id) {
+          <tr>
+            <td>{{ v.name }}</td>
+            <td>{{ v.license_plate }}</td>
+            <td>{{ v.type }}</td>
+            <td>{{ v.fuel_consumption }} km/liter</td>
+            <td>{{ v.ownership }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" style="text-align: center;">Menunggu data dari API...</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

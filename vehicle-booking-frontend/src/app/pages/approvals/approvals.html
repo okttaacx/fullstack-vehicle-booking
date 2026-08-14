@@ -1,0 +1,61 @@
+<div>
+  <h2 style="margin-bottom: 16px;">Persetujuan Pemesanan</h2>
+
+  @if (actionMsg()) {
+    <p style="color: green; background: #dcfce7; padding: 10px; border-radius: 6px;">{{ actionMsg() }}</p>
+  }
+  @if (errorMsg()) {
+    <p style="color: red; background: #fee2e2; padding: 10px; border-radius: 6px;">{{ errorMsg() }}</p>
+  }
+
+  @if (loading()) {
+    <p>Memuat data...</p>
+  } @else {
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      @for (item of approvals(); track item.id) {
+        <div style="background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <div style="display: flex; justify-content: space-between;">
+            <div>
+              <h4 style="margin: 0 0 6px 0;">{{ item.booking_code }} — Level {{ item.level }}</h4>
+              <p style="margin: 2px 0; color: #4b5563;">Kendaraan: {{ item.vehicle_name }} ({{ item.license_plate }})</p>
+              <p style="margin: 2px 0; color: #4b5563;">Tujuan: {{ item.destination || '-' }}</p>
+              <p style="margin: 2px 0; color: #4b5563;">Keperluan: {{ item.purpose || '-' }}</p>
+              <p style="margin: 2px 0; color: #4b5563;">Tanggal: {{ item.start_date }} s/d {{ item.end_date }}</p>
+            </div>
+
+            <div style="display: flex; align-items: flex-start; gap: 8px;">
+              <button (click)="approve(item.id)" [disabled]="processingId() === item.id"
+                style="padding: 8px 16px; background: #22c55e; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                {{ processingId() === item.id ? '...' : 'Setujui' }}
+              </button>
+              <button (click)="openReject(item.id)" [disabled]="processingId() === item.id"
+                style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                Tolak
+              </button>
+            </div>
+          </div>
+
+          @if (showRejectFor() === item.id) {
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0;">
+              <label>Alasan Penolakan</label>
+              <textarea [(ngModel)]="rejectNotes" rows="2"
+                style="width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box;"></textarea>
+              <div style="margin-top: 8px; display: flex; gap: 8px;">
+                <button (click)="confirmReject(item.id)"
+                  style="padding: 6px 14px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                  Konfirmasi Tolak
+                </button>
+                <button (click)="cancelReject()"
+                  style="padding: 6px 14px; background: #e5e7eb; border: none; border-radius: 6px; cursor: pointer;">
+                  Batal
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      } @empty {
+        <p style="text-align: center; padding: 20px; color: #6b7280;">Tidak ada pemesanan yang menunggu persetujuan Anda</p>
+      }
+    </div>
+  }
+</div>

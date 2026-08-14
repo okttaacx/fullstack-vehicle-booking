@@ -1,0 +1,36 @@
+<div>
+  <h2 style="margin-bottom: 16px;">Daftar Kendaraan</h2>
+
+  @if (loading()) {
+    <p>Memuat data...</p>
+  } @else if (errorMsg()) {
+    <p style="color: red;">{{ errorMsg() }}</p>
+  } @else {
+    <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+      <thead style="background: #e5e7eb;">
+        <tr>
+          <th style="text-align: left; padding: 10px;">Nama Kendaraan</th>
+          <th style="text-align: left; padding: 10px;">Plat Nomor</th>
+          <th style="text-align: left; padding: 10px;">Tipe Angkutan</th>
+          <th style="text-align: left; padding: 10px;">Konsumsi BBM</th>
+          <th style="text-align: left; padding: 10px;">Status Milik</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (v of vehicles(); track v.id) {
+          <tr style="border-top: 1px solid #f0f0f0;">
+            <td style="padding: 10px;">{{ v.name }}</td>
+            <td style="padding: 10px;">{{ v.license_plate }}</td>
+            <td style="padding: 10px;">{{ v.type }}</td>
+            <td style="padding: 10px;">{{ v.fuel_consumption }} km/liter</td>
+            <td style="padding: 10px;">{{ v.ownership }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 20px;">Belum ada data kendaraan</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

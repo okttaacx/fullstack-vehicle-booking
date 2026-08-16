@@ -8,6 +8,7 @@ import { Auth } from '../../core/auth';
   standalone: true,
   imports: [FormsModule],
   templateUrl: './login.html',
+  styleUrl: './login.css',
 })
 export class Login {
   private auth = inject(Auth);

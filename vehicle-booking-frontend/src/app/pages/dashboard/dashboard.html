@@ -1,35 +1,81 @@
-<div>
-  <h2 style="margin-bottom: 16px;">Dashboard</h2>
+<div class="dash">
+  <div class="dash-header">
+    <div>
+      <p class="dash-eyebrow">{{ today }}</p>
+      <h1 class="dash-title">Selamat datang, {{ auth.currentUser()?.name }}</h1>
+    </div>
+  </div>
 
   @if (loading()) {
     <p>Memuat data...</p>
   } @else if (errorMsg()) {
-    <p style="color: red;">{{ errorMsg() }}</p>
+    <p class="error-text">{{ errorMsg() }}</p>
+  } @else {
+    <div class="bento">
+      <div class="cell stat stat-primary">
+        <span class="stat-label">Total Kendaraan</span>
+        <span class="stat-value">{{ totalVehicles() }}</span>
+        <span class="stat-note">unit aktif dipantau</span>
+      </div>
+
+      <div class="cell stat">
+        <span class="stat-label">Total Pemesanan</span>
+        <span class="stat-value">{{ totalBookings() }}</span>
+        <span class="stat-note">sepanjang periode berjalan</span>
+      </div>
+
+      <div class="cell stat">
+        <span class="stat-label">Menunggu Persetujuan</span>
+        <span class="stat-value accent-amber">{{ totalPending() }}</span>
+        <span class="stat-note">perlu tindakan approver</span>
+      </div>
+
+      <div class="cell stat">
+        <span class="stat-label">Rata-rata Konsumsi BBM</span>
+        <span class="stat-value">{{ avgFuel() }}</span>
+        <span class="stat-note">km / liter</span>
+      </div>
+
+      <div class="cell chart-cell">
+        <div class="cell-header">
+          <h3>Pemakaian per Kendaraan</h3>
+          <span class="cell-sub">Frekuensi pemesanan tiap unit</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas #usageCanvas></canvas>
+        </div>
+      </div>
+
+      <div class="cell status-cell">
+        <div class="cell-header">
+          <h3>Status Pemesanan</h3>
+          <span class="cell-sub">Distribusi status saat ini</span>
+        </div>
+        <div class="chart-wrap chart-wrap-donut">
+          <canvas #statusCanvas></canvas>
+        </div>
+      </div>
+
+      <div class="cell recent-cell">
+        <div class="cell-header">
+          <h3>Pemesanan Terbaru</h3>
+          <span class="cell-sub">5 aktivitas terakhir</span>
+        </div>
+
+        <div class="recent-list">
+          @for (b of recentBookings(); track b.id) {
+            <div class="recent-row">
+              <div class="recent-main">
+                <span class="recent-code">{{ b.booking_code }}</span>
+                <span class="recent-vehicle">{{ b.vehicle_name }}</span>
+              </div>
+              <span class="badge" [class]="statusClass(b.status)">{{ statusLabel(b.status) }}</span>
+            </div>
+          } @empty {
+            <p class="empty-note">Belum ada pemesanan</p>
+          }
+        </div>
+      </div>
+    </div>
   }
-
-  <div style="display: flex; gap: 16px; margin-bottom: 24px;">
-    <div style="flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-      <p style="color: #6b7280; margin: 0 0 8px 0;">Total Pemesanan</p>
-      <h3 style="margin: 0; font-size: 28px;">{{ totalBookings() }}</h3>
-    </div>
-    <div style="flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-      <p style="color: #6b7280; margin: 0 0 8px 0;">Menunggu Persetujuan</p>
-      <h3 style="margin: 0; font-size: 28px; color: #f59e0b;">{{ totalPending() }}</h3>
-    </div>
-    <div style="flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-      <p style="color: #6b7280; margin: 0 0 8px 0;">Selesai</p>
-      <h3 style="margin: 0; font-size: 28px; color: #22c55e;">{{ totalCompleted() }}</h3>
-    </div>
-  </div>
-
-  <div style="display: flex; gap: 16px;">
-    <div style="flex: 2; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-      <h4 style="margin-top: 0;">Pemakaian per Kendaraan</h4>
-      <canvas #usageCanvas></canvas>
-    </div>
-    <div style="flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-      <h4 style="margin-top: 0;">Status Pemesanan</h4>
-      <canvas #statusCanvas></canvas>
-    </div>
-  </div>
 </div>

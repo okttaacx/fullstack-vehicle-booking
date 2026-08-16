@@ -8,27 +8,24 @@ import { Auth } from '../../core/auth';
   standalone: true,
   imports: [FormsModule],
   templateUrl: './bookings.html',
+  styleUrl: './bookings.css',
 })
 export class Bookings implements OnInit {
   private api = inject(Api);
   auth = inject(Auth);
 
-  // Data untuk dropdown
   vehicles = signal<any[]>([]);
   drivers = signal<any[]>([]);
   approvers = signal<any[]>([]);
 
-  // Data tabel riwayat pemesanan
   bookings = signal<any[]>([]);
   loadingList = signal(true);
 
-  // State form
   showForm = signal(false);
   submitting = signal(false);
   formError = signal('');
   formSuccess = signal('');
 
-  // Form fields
   vehicleId = '';
   driverId = '';
   approverL1Id = '';
@@ -37,6 +34,11 @@ export class Bookings implements OnInit {
   destination = '';
   startDate = '';
   endDate = '';
+
+  exportStart = '';
+  exportEnd = '';
+  exporting = signal(false);
+  exportError = signal('');
 
   get approversLevel1() {
     return this.approvers().filter(a => String(a.level) === '1');
@@ -129,6 +131,27 @@ export class Bookings implements OnInit {
     });
   }
 
+  exportToExcel() {
+    this.exportError.set('');
+    this.exporting.set(true);
+
+    this.api.exportBookings(this.exportStart, this.exportEnd).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Laporan_Pemesanan_Kendaraan_${new Date().getTime()}.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.exporting.set(false);
+      },
+      error: () => {
+        this.exportError.set('Gagal mengekspor laporan');
+        this.exporting.set(false);
+      },
+    });
+  }
+
   statusLabel(status: string): string {
     const map: Record<string, string> = {
       pending: 'Menunggu Persetujuan L1',
@@ -138,5 +161,16 @@ export class Bookings implements OnInit {
       completed: 'Selesai',
     };
     return map[status] ?? status;
+  }
+
+  statusClass(status: string): string {
+    const map: Record<string, string> = {
+      pending: 'badge-amber',
+      approved_l1: 'badge-blue',
+      approved_l2: 'badge-green',
+      rejected: 'badge-red',
+      completed: 'badge-green',
+    };
+    return map[status] ?? '';
   }
 }

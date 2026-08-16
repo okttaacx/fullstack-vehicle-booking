@@ -1,0 +1,192 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&display=swap');
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  font-family: 'Baloo 2', sans-serif;
+}
+
+.hero-panel {
+  flex: 1.1;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg, #0f3d2e 0%, #16603f 45%, #1f8f5c 100%);
+  display: flex;
+  align-items: center;
+  padding: 60px;
+}
+
+.hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.35;
+}
+
+.blob-1 {
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle at 30% 30%, #4ade80, transparent 70%);
+  top: -120px;
+  right: -100px;
+}
+
+.blob-2 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle at 40% 40%, #86efac, transparent 70%);
+  bottom: -80px;
+  left: -60px;
+  opacity: 0.25;
+}
+
+.blob-3 {
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle at 50% 50%, #d1fae5, transparent 70%);
+  bottom: 20%;
+  right: 15%;
+  opacity: 0.2;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  color: white;
+  max-width: 480px;
+}
+
+.brand-name {
+  display: inline-block;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.3px;
+  margin-bottom: 48px;
+}
+
+.hero-title {
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-style: normal;
+  font-size: 42px;
+  line-height: 1.25;
+  margin: 0 0 20px 0;
+}
+
+.hero-subtitle {
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+}
+
+.form-panel {
+  flex: 0.9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7faf8;
+  padding: 40px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+}
+
+.login-title {
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-style: normal;
+  font-size: 27px;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+}
+
+.login-subtitle {
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: #64748b;
+  margin: 0 0 32px 0;
+}
+
+.field {
+  margin-bottom: 18px;
+}
+
+.field label {
+  display: block;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.field input {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1px solid #d9e2dc;
+  border-radius: 999px;
+  font-family: 'Baloo 2', sans-serif;
+  font-size: 14px;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.field input:focus {
+  border-color: #16a34a;
+}
+
+.error-text {
+  font-family: 'Baloo 2', sans-serif;
+  color: #dc2626;
+  font-size: 13px;
+  margin: 0 0 16px 0;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  background: #0f3d2e;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  font-family: 'Baloo 2', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.login-btn:hover:not(:disabled) {
+  background: #16603f;
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .login-page {
+    flex-direction: column;
+  }
+
+  .hero-panel {
+    min-height: 260px;
+    padding: 40px 30px;
+  }
+
+  .hero-title {
+    font-size: 30px;
+  }
+
+  .form-panel {
+    padding: 30px 20px;
+  }
+}

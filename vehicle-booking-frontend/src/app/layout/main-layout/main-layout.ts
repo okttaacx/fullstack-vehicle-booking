@@ -7,7 +7,13 @@ import { Auth } from '../../core/auth';
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './main-layout.html',
+  styleUrl: './main-layout.css',
 })
 export class MainLayout {
   auth = inject(Auth);
+
+  get initial(): string {
+    const name = this.auth.currentUser()?.name ?? '?';
+    return name.charAt(0).toUpperCase();
+  }
 }

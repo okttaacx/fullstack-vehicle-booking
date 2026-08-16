@@ -1,21 +1,76 @@
-<div style="display: flex; min-height: 100vh; font-family: sans-serif;">
-  <aside style="width: 220px; background: #1e293b; color: white; padding: 20px;">
-    <h3 style="margin-bottom: 24px;">🚗 VB System</h3>
-    <nav style="display: flex; flex-direction: column; gap: 8px;">
-      <a routerLink="/dashboard" routerLinkActive="active-link" style="color: #cbd5e1; text-decoration: none; padding: 8px;">Dashboard</a>
-      <a routerLink="/vehicles" routerLinkActive="active-link" style="color: #cbd5e1; text-decoration: none; padding: 8px;">Kendaraan</a>
-      <a routerLink="/bookings" routerLinkActive="active-link" style="color: #cbd5e1; text-decoration: none; padding: 8px;">Pemesanan</a>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <span class="brand-text">VB System</span>
+    </div>
+
+    <nav class="nav">
+      <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="9" rx="1.5"></rect>
+          <rect x="14" y="3" width="7" height="5" rx="1.5"></rect>
+          <rect x="14" y="12" width="7" height="9" rx="1.5"></rect>
+          <rect x="3" y="16" width="7" height="5" rx="1.5"></rect>
+        </svg>
+        <span>Dashboard</span>
+      </a>
+
+      <a routerLink="/vehicles" routerLinkActive="active" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 13l2-6a2 2 0 0 1 2-1.4h10A2 2 0 0 1 19 7l2 6"></path>
+          <path d="M2 13h20v4a1 1 0 0 1-1 1h-1.5a1.5 1.5 0 0 1-3 0h-9a1.5 1.5 0 0 1-3 0H3a1 1 0 0 1-1-1v-4z"></path>
+          <circle cx="7" cy="17.5" r="1.5"></circle>
+          <circle cx="17" cy="17.5" r="1.5"></circle>
+        </svg>
+        <span>Kendaraan</span>
+      </a>
+
+      <a routerLink="/bookings" routerLinkActive="active" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+          <path d="M16 2v4M8 2v4M3 10h18"></path>
+        </svg>
+        <span>Pemesanan</span>
+      </a>
+
       @if (auth.isApprover()) {
-        <a routerLink="/approvals" routerLinkActive="active-link" style="color: #cbd5e1; text-decoration: none; padding: 8px;">Approval</a>
+        <a routerLink="/approvals" routerLinkActive="active" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6L9 17l-5-5"></path>
+          </svg>
+          <span>Approval</span>
+        </a>
       }
     </nav>
+
+    <div class="sidebar-footer">
+      <p class="footer-note">Vehicle Booking System</p>
+    </div>
   </aside>
 
-  <main style="flex: 1; padding: 24px; background: #f9fafb;">
-    <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-      <span>Halo, <strong>{{ auth.currentUser()?.name }}</strong> ({{ auth.currentUser()?.role }})</span>
-      <button (click)="auth.logout()" style="padding: 6px 14px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">Logout</button>
-    </div>
-    <router-outlet></router-outlet>
-  </main>
+  <div class="content-area">
+    <header class="topbar">
+      <div class="user-chip">
+        <span class="avatar">{{ initial }}</span>
+        <div class="user-info">
+          <span class="user-name">{{ auth.currentUser()?.name }}</span>
+          <span class="user-role">{{ auth.currentUser()?.role }}</span>
+        </div>
+      </div>
+
+      <button class="logout-btn" (click)="auth.logout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <path d="M16 17l5-5-5-5"></path>
+          <path d="M21 12H9"></path>
+        </svg>
+        Logout
+      </button>
+    </header>
+
+    <main class="page-body">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
 </div>

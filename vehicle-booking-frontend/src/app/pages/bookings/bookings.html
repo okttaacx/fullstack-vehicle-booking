@@ -1,130 +1,156 @@
-<div>
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-    <h2 style="margin: 0;">Pemesanan Kendaraan</h2>
-    @if (auth.isAdmin()) {
-      <button (click)="openForm()"
-        style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer;">
-        + Buat Pemesanan
+<div class="book">
+  <div class="book-header">
+    <div>
+      <h1 class="book-title">Pemesanan Kendaraan</h1>
+      <p class="book-sub">{{ bookings().length }} pemesanan tercatat</p>
+    </div>
+
+    <div class="header-actions">
+      <div class="date-range">
+        <input type="date" [(ngModel)]="exportStart" title="Dari tanggal">
+        <span class="date-sep">—</span>
+        <input type="date" [(ngModel)]="exportEnd" title="Sampai tanggal">
+      </div>
+
+      <button class="btn-export" (click)="exportToExcel()" [disabled]="exporting()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+          <path d="M12 3v12M7 10l5 5 5-5"></path>
+          <path d="M4 21h16"></path>
+        </svg>
+        {{ exporting() ? 'Mengekspor...' : 'Export Excel' }}
       </button>
-    }
+
+      @if (auth.isAdmin()) {
+        <button class="btn-primary" (click)="openForm()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="16" height="16"><path d="M12 5v14M5 12h14"></path></svg>
+          Buat Pemesanan
+        </button>
+      }
+    </div>
   </div>
 
-  @if (showForm()) {
-    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-      <h4 style="margin-top: 0;">Form Pemesanan Baru</h4>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-        <div>
-          <label>Kendaraan *</label>
-          <select [(ngModel)]="vehicleId" style="width: 100%; padding: 8px; margin-top: 4px;">
-            <option value="">-- Pilih Kendaraan --</option>
-            @for (v of vehicles(); track v.id) {
-              <option [value]="v.id">{{ v.name }} ({{ v.license_plate }})</option>
-            }
-          </select>
-        </div>
-
-        <div>
-          <label>Driver (opsional)</label>
-          <select [(ngModel)]="driverId" style="width: 100%; padding: 8px; margin-top: 4px;">
-            <option value="">-- Tanpa Driver --</option>
-            @for (d of drivers(); track d.id) {
-              <option [value]="d.id">{{ d.name }}</option>
-            }
-          </select>
-        </div>
-
-        <div>
-          <label>Approver Level 1 *</label>
-          <select [(ngModel)]="approverL1Id" style="width: 100%; padding: 8px; margin-top: 4px;">
-            <option value="">-- Pilih Approver L1 --</option>
-            @for (a of approversLevel1; track a.id) {
-              <option [value]="a.id">{{ a.name }}</option>
-            }
-          </select>
-        </div>
-
-        <div>
-          <label>Approver Level 2 *</label>
-          <select [(ngModel)]="approverL2Id" style="width: 100%; padding: 8px; margin-top: 4px;">
-            <option value="">-- Pilih Approver L2 --</option>
-            @for (a of approversLevel2; track a.id) {
-              <option [value]="a.id">{{ a.name }}</option>
-            }
-          </select>
-        </div>
-
-        <div>
-          <label>Tanggal Mulai *</label>
-          <input type="datetime-local" [(ngModel)]="startDate" style="width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box;">
-        </div>
-
-        <div>
-          <label>Tanggal Selesai *</label>
-          <input type="datetime-local" [(ngModel)]="endDate" style="width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box;">
-        </div>
-
-        <div>
-          <label>Tujuan</label>
-          <input type="text" [(ngModel)]="destination" style="width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box;">
-        </div>
-
-        <div>
-          <label>Keperluan</label>
-          <input type="text" [(ngModel)]="purpose" style="width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box;">
-        </div>
-      </div>
-
-      @if (formError()) {
-        <p style="color: red; margin-top: 12px;">{{ formError() }}</p>
-      }
-      @if (formSuccess()) {
-        <p style="color: green; margin-top: 12px;">{{ formSuccess() }}</p>
-      }
-
-      <div style="margin-top: 16px; display: flex; gap: 8px;">
-        <button (click)="submitBooking()" [disabled]="submitting()"
-          style="padding: 8px 16px; background: #22c55e; color: white; border: none; border-radius: 6px; cursor: pointer;">
-          {{ submitting() ? 'Menyimpan...' : 'Simpan Pemesanan' }}
-        </button>
-        <button (click)="cancelForm()"
-          style="padding: 8px 16px; background: #e5e7eb; border: none; border-radius: 6px; cursor: pointer;">
-          Batal
-        </button>
-      </div>
-    </div>
+  @if (exportError()) {
+    <p class="error-text">{{ exportError() }}</p>
   }
 
   @if (loadingList()) {
     <p>Memuat data...</p>
   } @else {
-    <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
-      <thead style="background: #e5e7eb;">
-        <tr>
-          <th style="text-align: left; padding: 10px;">Kode Booking</th>
-          <th style="text-align: left; padding: 10px;">Kendaraan</th>
-          <th style="text-align: left; padding: 10px;">Driver</th>
-          <th style="text-align: left; padding: 10px;">Pemohon</th>
-          <th style="text-align: left; padding: 10px;">Tanggal</th>
-          <th style="text-align: left; padding: 10px;">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (b of bookings(); track b.id) {
-          <tr style="border-top: 1px solid #f0f0f0;">
-            <td style="padding: 10px;">{{ b.booking_code }}</td>
-            <td style="padding: 10px;">{{ b.vehicle_name }}</td>
-            <td style="padding: 10px;">{{ b.driver_name || '-' }}</td>
-            <td style="padding: 10px;">{{ b.requester_name }}</td>
-            <td style="padding: 10px;">{{ b.start_date }} s/d {{ b.end_date }}</td>
-            <td style="padding: 10px;">{{ statusLabel(b.status) }}</td>
-          </tr>
-        } @empty {
+    <div class="table-card">
+      <table class="book-table">
+        <thead>
           <tr>
-            <td colspan="6" style="text-align: center; padding: 20px;">Belum ada pemesanan</td>
+            <th>Kode Booking</th>
+            <th>Kendaraan</th>
+            <th>Driver</th>
+            <th>Pemohon</th>
+            <th>Tanggal</th>
+            <th>Status</th>
           </tr>
+        </thead>
+        <tbody>
+          @for (b of bookings(); track b.id) {
+            <tr>
+              <td class="cell-code">{{ b.booking_code }}</td>
+              <td>{{ b.vehicle_name }}</td>
+              <td>{{ b.driver_name || '-' }}</td>
+              <td>{{ b.requester_name }}</td>
+              <td class="cell-date">{{ b.start_date }} s/d {{ b.end_date }}</td>
+              <td>
+                <span class="badge" [class]="statusClass(b.status)">{{ statusLabel(b.status) }}</span>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-cell">Belum ada pemesanan</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (showForm()) {
+    <div class="modal-overlay" (click)="cancelForm()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">Form Pemesanan Baru</h3>
+
+        <div class="form-grid">
+          <div class="field">
+            <label>Kendaraan *</label>
+            <select [(ngModel)]="vehicleId">
+              <option value="">-- Pilih Kendaraan --</option>
+              @for (v of vehicles(); track v.id) {
+                <option [value]="v.id">{{ v.name }} ({{ v.license_plate }})</option>
+              }
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Driver (opsional)</label>
+            <select [(ngModel)]="driverId">
+              <option value="">-- Tanpa Driver --</option>
+              @for (d of drivers(); track d.id) {
+                <option [value]="d.id">{{ d.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Approver Level 1 *</label>
+            <select [(ngModel)]="approverL1Id">
+              <option value="">-- Pilih Approver L1 --</option>
+              @for (a of approversLevel1; track a.id) {
+                <option [value]="a.id">{{ a.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Approver Level 2 *</label>
+            <select [(ngModel)]="approverL2Id">
+              <option value="">-- Pilih Approver L2 --</option>
+              @for (a of approversLevel2; track a.id) {
+                <option [value]="a.id">{{ a.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Tanggal Mulai *</label>
+            <input type="datetime-local" [(ngModel)]="startDate">
+          </div>
+
+          <div class="field">
+            <label>Tanggal Selesai *</label>
+            <input type="datetime-local" [(ngModel)]="endDate">
+          </div>
+
+          <div class="field">
+            <label>Tujuan</label>
+            <input type="text" [(ngModel)]="destination" placeholder="Contoh: Tambang 1">
+          </div>
+
+          <div class="field">
+            <label>Keperluan</label>
+            <input type="text" [(ngModel)]="purpose" placeholder="Contoh: Kunjungan lapangan">
+          </div>
+        </div>
+
+        @if (formError()) {
+          <p class="error-text form-error">{{ formError() }}</p>
         }
-      </tbody>
-    </table>
+        @if (formSuccess()) {
+          <p class="success-text">{{ formSuccess() }}</p>
+        }
+
+        <div class="modal-actions">
+          <button class="btn-primary" (click)="submitBooking()" [disabled]="submitting()">
+            {{ submitting() ? 'Menyimpan...' : 'Simpan Pemesanan' }}
+          </button>
+          <button class="btn-ghost-lg" (click)="cancelForm()">Batal</button>
+        </div>
+      </div>
+    </div>
   }
 </div>

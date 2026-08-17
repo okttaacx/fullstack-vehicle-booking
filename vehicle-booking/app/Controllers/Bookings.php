@@ -16,13 +16,29 @@ class Bookings extends ResourceController
         $db = \Config\Database::connect();
 
         $bookings = $db->table("vehicle_bookings b")
-            ->select("b.*, v.name as vehicle_name, v.license_plate, d.name as driver_name, u.name as requester_name")
+            ->select("b.*, v.name as vehicle_name, v.license_plate, v.type as vehicle_type, d.name as driver_name, u.name as requester_name")
             ->join("vehicles v", "v.id = b.vehicle_id", "left")
             ->join("drivers d", "d.id = b.driver_id", "left")
             ->join("users u", "u.id = b.requested_by", "left")
             ->orderBy("b.created_at", "DESC")
             ->get()
             ->getResultArray();
+
+        // Tambahkan alasan penolakan (jika ada) dari booking_approvals
+        foreach ($bookings as &$b) {
+            $b["rejection_reason"] = null;
+            if ($b["status"] === "rejected") {
+                $rejected = $db->table("booking_approvals")
+                    ->where("booking_id", $b["id"])
+                    ->where("status", "rejected")
+                    ->get()
+                    ->getRowArray();
+
+                if ($rejected) {
+                    $b["rejection_reason"] = $rejected["notes"];
+                }
+            }
+        }
 
         return $this->respond([
             "status" => 200,
@@ -61,7 +77,6 @@ class Bookings extends ResourceController
     {
         $data = $this->request->getJSON(true);
 
-        // Validasi minimal
         $required = ["requested_by", "vehicle_id", "start_date", "end_date", "approver_level1_id", "approver_level2_id"];
         foreach ($required as $field) {
             if (empty($data[$field])) {
@@ -86,7 +101,6 @@ class Bookings extends ResourceController
             "status"       => "pending",
         ]);
 
-        // Buat 2 baris approval berjenjang
         $approvalModel->insert([
             "booking_id"  => $bookingId,
             "approver_id" => $data["approver_level1_id"],

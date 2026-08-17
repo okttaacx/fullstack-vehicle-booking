@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { SlicePipe } from '@angular/common';
 import { Api } from '../../core/api';
 import { Auth } from '../../core/auth';
 
@@ -8,11 +9,12 @@ type TabKey = 'semua' | 'pending' | 'approved' | 'rejected';
 @Component({
   selector: 'app-approvals',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, SlicePipe],
   templateUrl: './approvals.html',
   styleUrl: './approvals.css',
 })
 export class Approvals implements OnInit {
+  Math = Math;
   private api = inject(Api);
   auth = inject(Auth);
 

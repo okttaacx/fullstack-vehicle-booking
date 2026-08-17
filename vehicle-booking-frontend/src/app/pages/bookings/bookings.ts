@@ -1,12 +1,13 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { SlicePipe } from '@angular/common';
 import { Api } from '../../core/api';
 import { Auth } from '../../core/auth';
 
 @Component({
   selector: 'app-bookings',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, SlicePipe],
   templateUrl: './bookings.html',
   styleUrl: './bookings.css',
 })
@@ -18,8 +19,15 @@ export class Bookings implements OnInit {
   drivers = signal<any[]>([]);
   approvers = signal<any[]>([]);
 
-  bookings = signal<any[]>([]);
+  allBookings = signal<any[]>([]);
   loadingList = signal(true);
+
+  searchTerm = '';
+  filterStatus = '';
+  showFilterMenu = signal(false);
+  sortDesc = signal(true);
+  page = signal(1);
+  pageSize = 5;
 
   showForm = signal(false);
   submitting = signal(false);
@@ -40,6 +48,10 @@ export class Bookings implements OnInit {
   exporting = signal(false);
   exportError = signal('');
 
+  openMenuId = signal<number | null>(null);
+  copiedId = signal<number | null>(null);
+  detailBooking = signal<any | null>(null);
+
   get approversLevel1() {
     return this.approvers().filter(a => String(a.level) === '1');
   }
@@ -47,6 +59,44 @@ export class Bookings implements OnInit {
   get approversLevel2() {
     return this.approvers().filter(a => String(a.level) === '2');
   }
+
+  totalAll = computed(() => this.allBookings().length);
+  totalPending = computed(() => this.allBookings().filter(b => b.status === 'pending' || b.status === 'approved_l1').length);
+  totalApproved = computed(() => this.allBookings().filter(b => b.status === 'approved_l2' || b.status === 'completed').length);
+  totalRejected = computed(() => this.allBookings().filter(b => b.status === 'rejected').length);
+
+  filteredBookings = computed(() => {
+    let list = this.allBookings();
+
+    const term = this.searchTerm.trim().toLowerCase();
+    if (term) {
+      list = list.filter(b =>
+        (b.booking_code ?? '').toLowerCase().includes(term) ||
+        (b.vehicle_name ?? '').toLowerCase().includes(term)
+      );
+    }
+
+    if (this.filterStatus) {
+      list = list.filter(b => b.status === this.filterStatus);
+    }
+
+    list = [...list].sort((a, b) => {
+      const da = new Date(a.start_date).getTime();
+      const db = new Date(b.start_date).getTime();
+      return this.sortDesc() ? db - da : da - db;
+    });
+
+    return list;
+  });
+
+  totalPages = computed(() => Math.max(1, Math.ceil(this.filteredBookings().length / this.pageSize)));
+
+  pagedBookings = computed(() => {
+    const start = (this.page() - 1) * this.pageSize;
+    return this.filteredBookings().slice(start, start + this.pageSize);
+  });
+
+  Math = Math;
 
   ngOnInit() {
     this.loadBookings();
@@ -59,11 +109,62 @@ export class Bookings implements OnInit {
     this.loadingList.set(true);
     this.api.getBookings().subscribe({
       next: (res) => {
-        this.bookings.set(res.data ?? []);
+        this.allBookings.set(res.data ?? []);
         this.loadingList.set(false);
       },
       error: () => this.loadingList.set(false),
     });
+  }
+
+  vehicleImage(type: string): string {
+    return type === 'angkutan_barang'
+      ? 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=400&auto=format&fit=crop'
+      : 'https://images.unsplash.com/photo-1605152322346-bd2391778772?q=80&w=400&auto=format&fit=crop';
+  }
+
+  toggleFilterMenu() {
+    this.showFilterMenu.update(v => !v);
+  }
+
+  clearFilters() {
+    this.filterStatus = '';
+  }
+
+  toggleSort() {
+    this.sortDesc.update(v => !v);
+  }
+
+  onSearchChange() {
+    this.page.set(1);
+  }
+
+  goToPage(p: number) {
+    if (p < 1 || p > this.totalPages()) return;
+    this.page.set(p);
+  }
+
+  toggleMenu(id: number) {
+    this.openMenuId.set(this.openMenuId() === id ? null : id);
+  }
+
+  closeMenu() {
+    this.openMenuId.set(null);
+  }
+
+  copyCode(b: any) {
+    navigator.clipboard.writeText(b.booking_code).then(() => {
+      this.copiedId.set(b.id);
+      setTimeout(() => this.copiedId.set(null), 1500);
+    });
+  }
+
+  openDetail(b: any) {
+    this.detailBooking.set(b);
+    this.closeMenu();
+  }
+
+  closeDetail() {
+    this.detailBooking.set(null);
   }
 
   openForm() {
@@ -154,8 +255,8 @@ export class Bookings implements OnInit {
 
   statusLabel(status: string): string {
     const map: Record<string, string> = {
-      pending: 'Menunggu Persetujuan L1',
-      approved_l1: 'Menunggu Persetujuan L2',
+      pending: 'Menunggu L1',
+      approved_l1: 'Menunggu L2',
       approved_l2: 'Disetujui',
       rejected: 'Ditolak',
       completed: 'Selesai',
@@ -172,5 +273,9 @@ export class Bookings implements OnInit {
       completed: 'badge-green',
     };
     return map[status] ?? '';
+  }
+
+  initials(name: string): string {
+    return (name ?? '?').charAt(0).toUpperCase();
   }
 }

@@ -1,12 +1,13 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { SlicePipe } from '@angular/common';
 import { Api } from '../../core/api';
 import { Auth } from '../../core/auth';
 
 @Component({
   selector: 'app-vehicles',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, SlicePipe],
   templateUrl: './vehicles.html',
   styleUrl: './vehicles.css',
 })
@@ -15,8 +16,14 @@ export class Vehicles implements OnInit {
   auth = inject(Auth);
 
   vehicles = signal<any[]>([]);
+  bookings = signal<any[]>([]);
   loading = signal(true);
   errorMsg = signal('');
+
+  searchTerm = '';
+  filterType = '';
+  filterOwnership = '';
+  showFilterMenu = signal(false);
 
   showForm = signal(false);
   editingId: number | null = null;
@@ -31,9 +38,37 @@ export class Vehicles implements OnInit {
   serviceSchedule = '';
 
   deletingId = signal<number | null>(null);
+  openMenuId = signal<number | null>(null);
+  copiedId = signal<number | null>(null);
+
+  detailVehicle = signal<any | null>(null);
+  statusVehicle = signal<any | null>(null);
+
+  filteredVehicles = computed(() => {
+    let list = this.vehicles();
+
+    const term = this.searchTerm.trim().toLowerCase();
+    if (term) {
+      list = list.filter(v =>
+        (v.name ?? '').toLowerCase().includes(term) ||
+        (v.license_plate ?? '').toLowerCase().includes(term)
+      );
+    }
+
+    if (this.filterType) {
+      list = list.filter(v => v.type === this.filterType);
+    }
+
+    if (this.filterOwnership) {
+      list = list.filter(v => v.ownership === this.filterOwnership);
+    }
+
+    return list;
+  });
 
   ngOnInit() {
     this.loadVehicles();
+    this.api.getBookings().subscribe({ next: (res) => this.bookings.set(res.data ?? []) });
   }
 
   loadVehicles() {
@@ -48,6 +83,60 @@ export class Vehicles implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  vehicleImage(type: string): string {
+    return type === 'angkutan_barang'
+      ? 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800&auto=format&fit=crop'
+      : 'https://images.unsplash.com/photo-1605152322346-bd2391778772?q=80&w=800&auto=format&fit=crop';
+  }
+
+  toggleFilterMenu() {
+    this.showFilterMenu.update(v => !v);
+  }
+
+  clearFilters() {
+    this.filterType = '';
+    this.filterOwnership = '';
+  }
+
+  toggleMenu(id: number) {
+    this.openMenuId.set(this.openMenuId() === id ? null : id);
+  }
+
+  closeMenu() {
+    this.openMenuId.set(null);
+  }
+
+  copyPlate(v: any) {
+    navigator.clipboard.writeText(v.license_plate).then(() => {
+      this.copiedId.set(v.id);
+      setTimeout(() => this.copiedId.set(null), 1500);
+    });
+  }
+
+  openDetail(v: any) {
+    this.detailVehicle.set(v);
+    this.closeMenu();
+  }
+
+  closeDetail() {
+    this.detailVehicle.set(null);
+  }
+
+  openStatus(v: any) {
+    this.statusVehicle.set(v);
+    this.closeMenu();
+  }
+
+  closeStatus() {
+    this.statusVehicle.set(null);
+  }
+
+  vehicleBookingHistory(vehicleId: number) {
+    return this.bookings()
+      .filter((b: any) => Number(b.vehicle_id) === Number(vehicleId))
+      .sort((a: any, b: any) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
   }
 
   openCreateForm() {
@@ -67,6 +156,7 @@ export class Vehicles implements OnInit {
     this.serviceSchedule = v.service_schedule ?? '';
     this.showForm.set(true);
     this.formError.set('');
+    this.closeMenu();
   }
 
   cancelForm() {
@@ -122,6 +212,7 @@ export class Vehicles implements OnInit {
 
   confirmDelete(id: number) {
     this.deletingId.set(id);
+    this.closeMenu();
   }
 
   cancelDelete() {
@@ -147,5 +238,27 @@ export class Vehicles implements OnInit {
 
   ownershipLabel(ownership: string): string {
     return ownership === 'milik_perusahaan' ? 'Milik Perusahaan' : 'Sewa';
+  }
+
+  statusLabel(status: string): string {
+    const map: Record<string, string> = {
+      pending: 'Menunggu L1',
+      approved_l1: 'Menunggu L2',
+      approved_l2: 'Disetujui',
+      rejected: 'Ditolak',
+      completed: 'Selesai',
+    };
+    return map[status] ?? status;
+  }
+
+  statusClass(status: string): string {
+    const map: Record<string, string> = {
+      pending: 'badge-amber',
+      approved_l1: 'badge-blue',
+      approved_l2: 'badge-green',
+      rejected: 'badge-red',
+      completed: 'badge-green',
+    };
+    return map[status] ?? '';
   }
 }

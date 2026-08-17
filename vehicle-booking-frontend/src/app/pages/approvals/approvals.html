@@ -1,61 +1,214 @@
-<div>
-  <h2 style="margin-bottom: 16px;">Persetujuan Pemesanan</h2>
-
-  @if (actionMsg()) {
-    <p style="color: green; background: #dcfce7; padding: 10px; border-radius: 6px;">{{ actionMsg() }}</p>
-  }
-  @if (errorMsg()) {
-    <p style="color: red; background: #fee2e2; padding: 10px; border-radius: 6px;">{{ errorMsg() }}</p>
-  }
+<div class="appr">
+  <div class="appr-header">
+    <div>
+      <h1 class="appr-title">Persetujuan Pemesanan</h1>
+      <p class="appr-sub">Tinjau dan kelola permintaan pemesanan kendaraan</p>
+    </div>
+  </div>
 
   @if (loading()) {
     <p>Memuat data...</p>
+  } @else if (errorMsg()) {
+    <p class="error-text">{{ errorMsg() }}</p>
   } @else {
-    <div style="display: flex; flex-direction: column; gap: 12px;">
-      @for (item of approvals(); track item.id) {
-        <div style="background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-          <div style="display: flex; justify-content: space-between;">
-            <div>
-              <h4 style="margin: 0 0 6px 0;">{{ item.booking_code }} — Level {{ item.level }}</h4>
-              <p style="margin: 2px 0; color: #4b5563;">Kendaraan: {{ item.vehicle_name }} ({{ item.license_plate }})</p>
-              <p style="margin: 2px 0; color: #4b5563;">Tujuan: {{ item.destination || '-' }}</p>
-              <p style="margin: 2px 0; color: #4b5563;">Keperluan: {{ item.purpose || '-' }}</p>
-              <p style="margin: 2px 0; color: #4b5563;">Tanggal: {{ item.start_date }} s/d {{ item.end_date }}</p>
-            </div>
+    <div class="stat-row">
+      <div class="stat-card stat-amber">
+        <div>
+          <span class="stat-label">Menunggu Persetujuan</span>
+          <span class="stat-value">{{ totalPending() }}</span>
+          <span class="stat-note">permintaan</span>
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>
+        </div>
+      </div>
 
-            <div style="display: flex; align-items: flex-start; gap: 8px;">
-              <button (click)="approve(item.id)" [disabled]="processingId() === item.id"
-                style="padding: 8px 16px; background: #22c55e; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                {{ processingId() === item.id ? '...' : 'Setujui' }}
-              </button>
-              <button (click)="openReject(item.id)" [disabled]="processingId() === item.id"
-                style="padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                Tolak
-              </button>
-            </div>
-          </div>
+      <div class="stat-card stat-green">
+        <div>
+          <span class="stat-label">Disetujui</span>
+          <span class="stat-value">{{ totalApproved() }}</span>
+          <span class="stat-note">permintaan</span>
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M20 6L9 17l-5-5"></path></svg>
+        </div>
+      </div>
 
-          @if (showRejectFor() === item.id) {
-            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0;">
-              <label>Alasan Penolakan</label>
-              <textarea [(ngModel)]="rejectNotes" rows="2"
-                style="width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box;"></textarea>
-              <div style="margin-top: 8px; display: flex; gap: 8px;">
-                <button (click)="confirmReject(item.id)"
-                  style="padding: 6px 14px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                  Konfirmasi Tolak
-                </button>
-                <button (click)="cancelReject()"
-                  style="padding: 6px 14px; background: #e5e7eb; border: none; border-radius: 6px; cursor: pointer;">
-                  Batal
-                </button>
-              </div>
-            </div>
+      <div class="stat-card stat-red">
+        <div>
+          <span class="stat-label">Ditolak</span>
+          <span class="stat-value">{{ totalRejected() }}</span>
+          <span class="stat-note">permintaan</span>
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+        </div>
+      </div>
+
+      <div class="stat-card stat-blue">
+        <div>
+          <span class="stat-label">Total Permintaan</span>
+          <span class="stat-value">{{ totalAll() }}</span>
+          <span class="stat-note">sepanjang waktu</span>
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"></path></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="tabs">
+        <button class="tab" [class.active]="activeTab() === 'semua'" (click)="setTab('semua')">Semua</button>
+        <button class="tab" [class.active]="activeTab() === 'pending'" (click)="setTab('pending')">
+          Menunggu
+          @if (totalPending() > 0) {
+            <span class="tab-badge">{{ totalPending() }}</span>
+          }
+        </button>
+        <button class="tab" [class.active]="activeTab() === 'approved'" (click)="setTab('approved')">Disetujui</button>
+        <button class="tab" [class.active]="activeTab() === 'rejected'" (click)="setTab('rejected')">Ditolak</button>
+      </div>
+
+      <div class="toolbar-right">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="15" height="15"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+          <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()" placeholder="Cari persetujuan...">
+        </div>
+
+        <button class="btn-sort" (click)="toggleSort()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 6h18M6 12h12M10 18h4"></path></svg>
+          {{ sortDesc() ? 'Terbaru' : 'Terlama' }}
+        </button>
+      </div>
+    </div>
+
+    @if (actionMsg()) {
+      <p class="success-text">{{ actionMsg() }}</p>
+    }
+
+    <div class="table-card">
+      @if (pagedApprovals().length === 0) {
+        <div class="empty-state">
+          <p>Tidak ada data untuk ditampilkan</p>
+        </div>
+      } @else {
+        <table class="appr-table">
+          <thead>
+            <tr>
+              <th>Detail Pemesanan</th>
+              <th>Tujuan &amp; Keperluan</th>
+              <th>Tanggal</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of pagedApprovals(); track item.id) {
+              <tr>
+                <td>
+                  <div class="detail-cell">
+                    <span class="detail-code">{{ item.booking_code }}</span>
+                    <span class="detail-vehicle">{{ item.vehicle_name }} <span class="plate-chip">{{ item.license_plate }}</span></span>
+                    <span class="level-chip">
+                      <span class="level-dot" [class.dot-blue]="item.level == 2"></span>
+                      Level {{ item.level }}
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <div class="purpose-cell">
+                    <span><strong>Tujuan</strong> : {{ item.destination || '-' }}</span>
+                    <span><strong>Keperluan</strong> : {{ item.purpose || '-' }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="date-cell">
+                    <span class="date-main">{{ item.start_date | slice:0:10 }}</span>
+                    <span class="date-time">{{ item.start_date | slice:11:16 }} - {{ item.end_date | slice:11:16 }}</span>
+                    @if (item.status === 'pending') {
+                      <span class="date-relative">{{ daysUntil(item.start_date) }} hari lagi</span>
+                    }
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" [class]="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
+                </td>
+                <td>
+                  @if (item.status === 'pending' && item.actionable) {
+                    <div class="action-btns">
+                      <button class="btn-approve" (click)="approve(item.id)" [disabled]="processingId() === item.id">
+                        {{ processingId() === item.id ? '...' : 'Setujui' }}
+                      </button>
+                      <button class="btn-reject" (click)="openReject(item.id)" [disabled]="processingId() === item.id">Tolak</button>
+                    </div>
+                  } @else if (item.status === 'pending' && !item.actionable) {
+                    <span class="waiting-note">Menunggu Level 1</span>
+                  } @else {
+                    <button class="btn-detail" (click)="openDetail(item)">
+                      {{ item.status === 'rejected' ? 'Lihat Alasan' : 'Lihat Detail' }}
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    @if (filteredApprovals().length > 0) {
+      <div class="pagination">
+        <span class="pagination-info">
+          Menampilkan {{ (page() - 1) * pageSize + 1 }}–{{ Math.min(page() * pageSize, filteredApprovals().length) }} dari {{ filteredApprovals().length }} data
+        </span>
+        <div class="pagination-controls">
+          <button (click)="goToPage(page() - 1)" [disabled]="page() === 1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M15 6l-6 6 6 6"></path></svg>
+          </button>
+          <span class="page-number">{{ page() }}</span>
+          <button (click)="goToPage(page() + 1)" [disabled]="page() === totalPages()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M9 6l6 6-6 6"></path></svg>
+          </button>
+        </div>
+      </div>
+    }
+  }
+
+  @if (showRejectFor()) {
+    <div class="modal-overlay" (click)="cancelReject()">
+      <div class="modal-card modal-small" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">Alasan Penolakan</h3>
+        <textarea [(ngModel)]="rejectNotes" rows="3" placeholder="Tuliskan alasan penolakan..."></textarea>
+        <div class="modal-actions">
+          <button class="btn-reject-solid" (click)="confirmReject(showRejectFor()!)">Konfirmasi Tolak</button>
+          <button class="btn-ghost-lg" (click)="cancelReject()">Batal</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (detailItem()) {
+    <div class="modal-overlay" (click)="closeDetail()">
+      <div class="modal-card modal-small" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">{{ detailItem().booking_code }}</h3>
+        <div class="detail-grid">
+          <div><strong>Kendaraan</strong><span>{{ detailItem().vehicle_name }} ({{ detailItem().license_plate }})</span></div>
+          <div><strong>Tujuan</strong><span>{{ detailItem().destination || '-' }}</span></div>
+          <div><strong>Keperluan</strong><span>{{ detailItem().purpose || '-' }}</span></div>
+          <div><strong>Tanggal</strong><span>{{ detailItem().start_date }} s/d {{ detailItem().end_date }}</span></div>
+          <div><strong>Status</strong><span class="badge" [class]="statusClass(detailItem().status)">{{ statusLabel(detailItem().status) }}</span></div>
+          @if (detailItem().status === 'rejected' && detailItem().notes) {
+            <div><strong>Alasan Penolakan</strong><span>{{ detailItem().notes }}</span></div>
+          }
+          @if (detailItem().status === 'approved' && detailItem().approved_at) {
+            <div><strong>Disetujui Pada</strong><span>{{ detailItem().approved_at }}</span></div>
           }
         </div>
-      } @empty {
-        <p style="text-align: center; padding: 20px; color: #6b7280;">Tidak ada pemesanan yang menunggu persetujuan Anda</p>
-      }
+        <div class="modal-actions">
+          <button class="btn-ghost-lg" (click)="closeDetail()">Tutup</button>
+        </div>
+      </div>
     </div>
   }
 </div>

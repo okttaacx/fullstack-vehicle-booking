@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ElementRef, ViewChild, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ElementRef, ViewChild, inject, signal } from '@angular/core';
 import { Chart, registerables } from 'chart.js';
 import { Api } from '../../core/api';
 import { Auth } from '../../core/auth';
@@ -16,47 +16,65 @@ export class Dashboard implements OnInit, AfterViewInit {
   private api = inject(Api);
   auth = inject(Auth);
 
-  @ViewChild('usageCanvas') usageCanvas!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('statusCanvas') statusCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('trendCanvas') trendCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('ownershipCanvas') ownershipCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('gaugeCanvas') gaugeCanvas!: ElementRef<HTMLCanvasElement>;
 
   loading = signal(true);
   errorMsg = signal('');
 
+  totalVehicles = signal(0);
   totalBookings = signal(0);
   totalPending = signal(0);
-  totalApproved = signal(0);
-  totalVehicles = signal(0);
   avgFuel = signal(0);
 
   recentBookings = signal<any[]>([]);
+  upcomingService = signal<any[]>([]);
 
-  private bookingsData: any[] = [];
-  private viewReady = false;
+  availabilityRate = signal(0);
+  approvalRate = signal(0);
 
   today = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  nowTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+  private vehiclesData: any[] = [];
+  private bookingsData: any[] = [];
+  private vehiclesLoaded = false;
+  private bookingsLoaded = false;
+  private viewReady = false;
+  private rendered = false;
 
   ngOnInit() {
     this.api.getVehicles().subscribe({
       next: (res) => {
-        const vehicles = res.data ?? [];
-        this.totalVehicles.set(vehicles.length);
-        const fuels = vehicles.map((v: any) => Number(v.fuel_consumption)).filter((n: number) => !isNaN(n));
+        this.vehiclesData = res.data ?? [];
+        this.vehiclesLoaded = true;
+        this.totalVehicles.set(this.vehiclesData.length);
+
+        const fuels = this.vehiclesData.map((v: any) => Number(v.fuel_consumption)).filter((n: number) => !isNaN(n));
         this.avgFuel.set(fuels.length ? Math.round((fuels.reduce((a: number, b: number) => a + b, 0) / fuels.length) * 10) / 10 : 0);
+
+        this.computeUpcomingService();
+        this.tryRender();
       },
+      error: () => this.errorMsg.set('Gagal memuat data kendaraan'),
     });
 
     this.api.getBookings().subscribe({
       next: (res) => {
         this.bookingsData = res.data ?? [];
-        this.totalBookings.set(this.bookingsData.length);
-        this.totalPending.set(this.bookingsData.filter(b => b.status === 'pending' || b.status === 'approved_l1').length);
-        this.totalApproved.set(this.bookingsData.filter(b => b.status === 'approved_l2' || b.status === 'completed').length);
-        this.recentBookings.set(this.bookingsData.slice(0, 5));
-        this.loading.set(false);
+        this.bookingsLoaded = true;
 
-        if (this.viewReady) {
-          this.renderCharts();
-        }
+        this.totalBookings.set(this.bookingsData.length);
+        this.totalPending.set(this.bookingsData.filter((b: any) => b.status === 'pending' || b.status === 'approved_l1').length);
+        this.recentBookings.set(this.bookingsData.slice(0, 5));
+
+        const finished = this.bookingsData.filter((b: any) => ['approved_l2', 'completed', 'rejected'].includes(b.status));
+        const approved = this.bookingsData.filter((b: any) => ['approved_l2', 'completed'].includes(b.status));
+        this.approvalRate.set(finished.length ? Math.round((approved.length / finished.length) * 100) : 0);
+
+        this.loading.set(false);
+        this.tryRender();
       },
       error: () => {
         this.errorMsg.set('Gagal memuat data pemesanan');
@@ -67,38 +85,96 @@ export class Dashboard implements OnInit, AfterViewInit {
 
   ngAfterViewInit() {
     this.viewReady = true;
-    if (this.bookingsData.length > 0 || !this.loading()) {
+    this.tryRender();
+  }
+
+  private tryRender() {
+    if (this.rendered) return;
+    if (!this.vehiclesLoaded || !this.bookingsLoaded) return;
+
+    // Beri jeda satu tick agar Angular selesai merender blok @else
+    // (elemen <canvas>) sebelum kita mengambil referensinya via ViewChild.
+    setTimeout(() => {
+      if (!this.trendCanvas || !this.ownershipCanvas || !this.gaugeCanvas) {
+        // View belum siap, coba lagi sebentar
+        setTimeout(() => this.tryRender(), 50);
+        return;
+      }
+      this.rendered = true;
+      this.computeAvailability();
       this.renderCharts();
-    }
+    }, 0);
+  }
+
+  private computeUpcomingService() {
+    const now = new Date();
+    const in14days = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+    const list = this.vehiclesData
+      .filter((v: any) => v.service_schedule)
+      .map((v: any) => ({ ...v, serviceDate: new Date(v.service_schedule) }))
+      .filter((v: any) => v.serviceDate <= in14days)
+      .sort((a: any, b: any) => a.serviceDate.getTime() - b.serviceDate.getTime())
+      .slice(0, 5);
+
+    this.upcomingService.set(list);
+  }
+
+  private computeAvailability() {
+    const now = new Date();
+    const busyVehicleIds = new Set(
+      this.bookingsData
+        .filter((b: any) => ['pending', 'approved_l1', 'approved_l2'].includes(b.status))
+        .filter((b: any) => new Date(b.start_date) <= now && now <= new Date(b.end_date))
+        .map((b: any) => b.vehicle_id)
+    );
+
+    const total = this.vehiclesData.length;
+    const available = total - busyVehicleIds.size;
+    this.availabilityRate.set(total ? Math.round((available / total) * 100) : 0);
   }
 
   private renderCharts() {
-    if (!this.usageCanvas || !this.statusCanvas) return;
+    this.renderTrendChart();
+    this.renderOwnershipChart();
+    this.renderGaugeChart();
+  }
 
-    const usageCounts: Record<string, number> = {};
-    for (const b of this.bookingsData) {
-      const name = b.vehicle_name ?? 'Tidak diketahui';
-      usageCounts[name] = (usageCounts[name] ?? 0) + 1;
+  private renderTrendChart() {
+    const days: string[] = [];
+    const counts: number[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const label = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+      const dateStr = d.toISOString().slice(0, 10);
+      days.push(label);
+      counts.push(this.bookingsData.filter((b: any) => (b.start_date ?? '').slice(0, 10) === dateStr).length);
     }
 
-    const barCtx = this.usageCanvas.nativeElement.getContext('2d');
-    let gradient;
-    if (barCtx) {
-      gradient = barCtx.createLinearGradient(0, 0, 0, 280);
-      gradient.addColorStop(0, '#16a34a');
-      gradient.addColorStop(1, '#bbf7d0');
+    const ctx = this.trendCanvas.nativeElement.getContext('2d');
+    let fillGradient;
+    if (ctx) {
+      fillGradient = ctx.createLinearGradient(0, 0, 0, 260);
+      fillGradient.addColorStop(0, 'rgba(22,163,74,0.25)');
+      fillGradient.addColorStop(1, 'rgba(22,163,74,0)');
     }
 
-    new Chart(this.usageCanvas.nativeElement, {
-      type: 'bar',
+    new Chart(this.trendCanvas.nativeElement, {
+      type: 'line',
       data: {
-        labels: Object.keys(usageCounts),
+        labels: days,
         datasets: [{
-          label: 'Jumlah Pemakaian',
-          data: Object.values(usageCounts),
-          backgroundColor: gradient ?? '#16a34a',
-          borderRadius: 8,
-          maxBarThickness: 48,
+          label: 'Pemesanan',
+          data: counts,
+          borderColor: '#16a34a',
+          backgroundColor: fillGradient ?? 'rgba(22,163,74,0.15)',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 4,
+          pointBackgroundColor: '#16a34a',
+          pointBorderColor: 'white',
+          pointBorderWidth: 2,
         }],
       },
       options: {
@@ -106,33 +182,24 @@ export class Dashboard implements OnInit, AfterViewInit {
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#eef2f0' } },
-          x: { grid: { display: false } },
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { family: 'Baloo 2' } }, grid: { color: '#eef2f0' } },
+          x: { grid: { display: false }, ticks: { font: { family: 'Baloo 2' } } },
         },
       },
     });
+  }
 
-    const statusMap: Record<string, string> = {
-      pending: 'Menunggu L1',
-      approved_l1: 'Menunggu L2',
-      approved_l2: 'Disetujui',
-      rejected: 'Ditolak',
-      completed: 'Selesai',
-    };
+  private renderOwnershipChart() {
+    const milik = this.vehiclesData.filter((v: any) => v.ownership === 'milik_perusahaan').length;
+    const sewa = this.vehiclesData.filter((v: any) => v.ownership === 'sewa').length;
 
-    const statusCounts: Record<string, number> = {};
-    for (const b of this.bookingsData) {
-      const label = statusMap[b.status] ?? b.status ?? 'Lainnya';
-      statusCounts[label] = (statusCounts[label] ?? 0) + 1;
-    }
-
-    new Chart(this.statusCanvas.nativeElement, {
+    new Chart(this.ownershipCanvas.nativeElement, {
       type: 'doughnut',
       data: {
-        labels: Object.keys(statusCounts),
+        labels: ['Milik Perusahaan', 'Sewa'],
         datasets: [{
-          data: Object.values(statusCounts),
-          backgroundColor: ['#f59e0b', '#0ea5e9', '#16a34a', '#ef4444', '#a855f7'],
+          data: [milik, sewa],
+          backgroundColor: ['#16a34a', '#f59e0b'],
           borderWidth: 0,
           spacing: 3,
         }],
@@ -142,11 +209,31 @@ export class Dashboard implements OnInit, AfterViewInit {
         maintainAspectRatio: false,
         cutout: '68%',
         plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { boxWidth: 10, font: { family: 'Baloo 2' } },
-          },
+          legend: { position: 'bottom', labels: { boxWidth: 10, font: { family: 'Baloo 2' } } },
         },
+      },
+    });
+  }
+
+  private renderGaugeChart() {
+    const value = this.availabilityRate();
+
+    new Chart(this.gaugeCanvas.nativeElement, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [value, 100 - value],
+          backgroundColor: ['#4ade80', 'rgba(255,255,255,0.15)'],
+          borderWidth: 0,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        circumference: 180,
+        rotation: 270,
+        cutout: '78%',
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
       },
     });
   }
@@ -171,5 +258,10 @@ export class Dashboard implements OnInit, AfterViewInit {
       completed: 'badge-green',
     };
     return map[status] ?? '';
+  }
+
+  daysUntil(dateStr: string): number {
+    const diff = new Date(dateStr).getTime() - new Date().setHours(0, 0, 0, 0);
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
   }
 }

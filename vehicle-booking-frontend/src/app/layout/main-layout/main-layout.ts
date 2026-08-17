@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { Auth } from '../../core/auth';
 
@@ -11,9 +11,14 @@ import { Auth } from '../../core/auth';
 })
 export class MainLayout {
   auth = inject(Auth);
+  userMenuOpen = signal(false);
 
   get initial(): string {
     const name = this.auth.currentUser()?.name ?? '?';
     return name.charAt(0).toUpperCase();
+  }
+
+  toggleUserMenu() {
+    this.userMenuOpen.update(v => !v);
   }
 }

@@ -12,6 +12,7 @@ class Approvals extends ResourceController
     protected $format = "json";
 
     // GET /api/approvals?approver_id=3
+    // Mengembalikan SEMUA riwayat approval milik approver ini (pending, approved, rejected)
     public function index()
     {
         $approverId = $this->request->getGet("approver_id");
@@ -25,33 +26,34 @@ class Approvals extends ResourceController
             ->join("vehicle_bookings b", "b.id = ba.booking_id", "left")
             ->join("vehicles v", "v.id = b.vehicle_id", "left")
             ->where("ba.approver_id", $approverId)
-            ->where("ba.status", "pending")
-            ->orderBy("ba.id", "ASC")
+            ->orderBy("ba.id", "DESC")
             ->get()
             ->getResultArray();
 
-        // Filter: level 2 hanya boleh muncul kalau level 1 booking yang sama sudah approved
-        $filtered = [];
-        foreach ($rows as $row) {
-            if ((int) $row["level"] === 1) {
-                $filtered[] = $row;
-                continue;
-            }
+        // Tandai actionable: level 1 pending selalu bisa diaksi;
+        // level 2 hanya bisa diaksi kalau level 1 booking yang sama sudah approved
+        foreach ($rows as &$row) {
+            $row["actionable"] = false;
+            if ($row["status"] === "pending") {
+                if ((int) $row["level"] === 1) {
+                    $row["actionable"] = true;
+                } else {
+                    $level1 = $db->table("booking_approvals")
+                        ->where("booking_id", $row["booking_id"])
+                        ->where("level", 1)
+                        ->get()
+                        ->getRowArray();
 
-            $level1 = $db->table("booking_approvals")
-                ->where("booking_id", $row["booking_id"])
-                ->where("level", 1)
-                ->get()
-                ->getRowArray();
-
-            if ($level1 && $level1["status"] === "approved") {
-                $filtered[] = $row;
+                    if ($level1 && $level1["status"] === "approved") {
+                        $row["actionable"] = true;
+                    }
+                }
             }
         }
 
         return $this->respond([
             "status" => 200,
-            "data"   => $filtered,
+            "data"   => $rows,
         ]);
     }
 
@@ -65,7 +67,6 @@ class Approvals extends ResourceController
             return $this->failNotFound("Data approval tidak ditemukan");
         }
 
-        // Validasi berjenjang: level 2 hanya boleh approve setelah level 1 approved
         if ((int) $approval["level"] === 2) {
             $level1 = $approvalModel
                 ->where("booking_id", $approval["booking_id"])

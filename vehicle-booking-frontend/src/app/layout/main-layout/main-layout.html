@@ -1,76 +1,116 @@
 <div class="shell">
   <aside class="sidebar">
-    <div class="brand">
-      <span class="brand-dot"></span>
-      <span class="brand-text">VB System</span>
+    <div class="sidebar-top">
+      <div class="brand">
+        <div class="brand-logo">VB</div>
+        <div class="brand-text">
+          <span class="brand-name">VB System</span>
+          <span class="brand-sub">Smart Vehicle Management</span>
+        </div>
+        <span class="online-dot"></span>
+      </div>
+
+      <div class="divider"></div>
+
+      <nav class="nav">
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="9" rx="1.5"></rect>
+              <rect x="14" y="3" width="7" height="5" rx="1.5"></rect>
+              <rect x="14" y="12" width="7" height="9" rx="1.5"></rect>
+              <rect x="3" y="16" width="7" height="5" rx="1.5"></rect>
+            </svg>
+          </span>
+          <span class="nav-label">Dashboard</span>
+          <span class="nav-chevron">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+          </span>
+        </a>
+
+        <a routerLink="/vehicles" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 13l2-6a2 2 0 0 1 2-1.4h10A2 2 0 0 1 19 7l2 6"></path>
+              <path d="M2 13h20v4a1 1 0 0 1-1 1h-1.5a1.5 1.5 0 0 1-3 0h-9a1.5 1.5 0 0 1-3 0H3a1 1 0 0 1-1-1v-4z"></path>
+              <circle cx="7" cy="17.5" r="1.5"></circle>
+              <circle cx="17" cy="17.5" r="1.5"></circle>
+            </svg>
+          </span>
+          <span class="nav-label">Kendaraan</span>
+          <span class="nav-chevron">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+          </span>
+        </a>
+
+        <a routerLink="/bookings" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+              <path d="M16 2v4M8 2v4M3 10h18"></path>
+            </svg>
+          </span>
+          <span class="nav-label">Pemesanan</span>
+          <span class="nav-chevron">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+          </span>
+        </a>
+
+        @if (auth.isApprover()) {
+          <a routerLink="/approvals" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6L9 17l-5-5"></path>
+              </svg>
+            </span>
+            <span class="nav-label">Approval</span>
+            <span class="nav-chevron">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+            </span>
+          </a>
+        }
+      </nav>
     </div>
 
-    <nav class="nav">
-      <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="7" height="9" rx="1.5"></rect>
-          <rect x="14" y="3" width="7" height="5" rx="1.5"></rect>
-          <rect x="14" y="12" width="7" height="9" rx="1.5"></rect>
-          <rect x="3" y="16" width="7" height="5" rx="1.5"></rect>
-        </svg>
-        <span>Dashboard</span>
-      </a>
+    <div class="sidebar-illustration">
+      <svg viewBox="0 0 400 220" fill="none" stroke="currentColor" stroke-width="1.2">
+        <path d="M20 170 C 60 120, 120 200, 180 150 S 300 90, 380 140" stroke-opacity="0.25"></path>
+        <g stroke-opacity="0.35">
+          <path d="M40 175 L60 130 Q65 118 80 118 L260 118 Q275 118 282 132 L300 175"></path>
+          <rect x="20" y="175" width="300" height="35" rx="10"></rect>
+          <circle cx="80" cy="212" r="20"></circle>
+          <circle cx="260" cy="212" r="20"></circle>
+          <line x1="90" y1="118" x2="90" y2="150"></line>
+          <line x1="250" y1="118" x2="250" y2="150"></line>
+        </g>
+      </svg>
+    </div>
 
-      <a routerLink="/vehicles" routerLinkActive="active" class="nav-item">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 13l2-6a2 2 0 0 1 2-1.4h10A2 2 0 0 1 19 7l2 6"></path>
-          <path d="M2 13h20v4a1 1 0 0 1-1 1h-1.5a1.5 1.5 0 0 1-3 0h-9a1.5 1.5 0 0 1-3 0H3a1 1 0 0 1-1-1v-4z"></path>
-          <circle cx="7" cy="17.5" r="1.5"></circle>
-          <circle cx="17" cy="17.5" r="1.5"></circle>
-        </svg>
-        <span>Kendaraan</span>
-      </a>
+    <div class="user-card" (click)="toggleUserMenu()">
+      <span class="avatar-wrap">
+        <span class="avatar">{{ initial }}</span>
+        <span class="status-dot"></span>
+      </span>
+      <div class="user-info">
+        <span class="user-name">{{ auth.currentUser()?.name }}</span>
+        <span class="user-role">{{ auth.currentUser()?.role }}</span>
+      </div>
+      <svg class="dropdown-chevron" [class.open]="userMenuOpen()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
 
-      <a routerLink="/bookings" routerLinkActive="active" class="nav-item">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2"></rect>
-          <path d="M16 2v4M8 2v4M3 10h18"></path>
-        </svg>
-        <span>Pemesanan</span>
-      </a>
-
-      @if (auth.isApprover()) {
-        <a routerLink="/approvals" routerLinkActive="active" class="nav-item">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 6L9 17l-5-5"></path>
+      @if (userMenuOpen()) {
+        <button class="logout-item" (click)="auth.logout(); $event.stopPropagation()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <path d="M16 17l5-5-5-5"></path>
+            <path d="M21 12H9"></path>
           </svg>
-          <span>Approval</span>
-        </a>
+          Logout
+        </button>
       }
-    </nav>
-
-    <div class="sidebar-footer">
-      <p class="footer-note">Vehicle Booking System</p>
     </div>
   </aside>
 
-  <div class="content-area">
-    <header class="topbar">
-      <div class="user-chip">
-        <span class="avatar">{{ initial }}</span>
-        <div class="user-info">
-          <span class="user-name">{{ auth.currentUser()?.name }}</span>
-          <span class="user-role">{{ auth.currentUser()?.role }}</span>
-        </div>
-      </div>
-
-      <button class="logout-btn" (click)="auth.logout()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <path d="M16 17l5-5-5-5"></path>
-          <path d="M21 12H9"></path>
-        </svg>
-        Logout
-      </button>
-    </header>
-
-    <main class="page-body">
-      <router-outlet></router-outlet>
-    </main>
-  </div>
+  <main class="page-body">
+    <router-outlet></router-outlet>
+  </main>
 </div>

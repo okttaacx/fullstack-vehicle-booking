@@ -1,8 +1,15 @@
 <div class="dash">
   <div class="dash-header">
     <div>
-      <p class="dash-eyebrow">{{ today }}</p>
-      <h1 class="dash-title">Selamat datang, {{ auth.currentUser()?.name }}</h1>
+      <h1 class="dash-title">Selamat datang kembali, <span class="highlight">{{ auth.currentUser()?.name }}</span></h1>
+      <p class="dash-sub">Pantau operasional kendaraan dan pemesanan secara real-time</p>
+    </div>
+    <div class="dash-date">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="16" height="16"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+      <div>
+        <span class="date-main">{{ today }}</span>
+        <span class="date-time">{{ nowTime }} WIB</span>
+      </div>
     </div>
   </div>
 
@@ -11,69 +18,131 @@
   } @else if (errorMsg()) {
     <p class="error-text">{{ errorMsg() }}</p>
   } @else {
-    <div class="bento">
-      <div class="cell stat stat-primary">
-        <span class="stat-label">Total Kendaraan</span>
-        <span class="stat-value">{{ totalVehicles() }}</span>
-        <span class="stat-note">unit aktif dipantau</span>
+    <div class="stat-row">
+      <div class="stat-card">
+        <div>
+          <span class="stat-label">Total Kendaraan</span>
+          <span class="stat-value">{{ totalVehicles() }}</span>
+        </div>
+        <div class="stat-icon icon-green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M3 13l2-6a2 2 0 0 1 2-1.4h10A2 2 0 0 1 19 7l2 6"></path><path d="M2 13h20v4a1 1 0 0 1-1 1h-1.5a1.5 1.5 0 0 1-3 0h-9a1.5 1.5 0 0 1-3 0H3a1 1 0 0 1-1-1v-4z"></path></svg>
+        </div>
       </div>
 
-      <div class="cell stat">
-        <span class="stat-label">Total Pemesanan</span>
-        <span class="stat-value">{{ totalBookings() }}</span>
-        <span class="stat-note">sepanjang periode berjalan</span>
+      <div class="stat-card">
+        <div>
+          <span class="stat-label">Total Pemesanan</span>
+          <span class="stat-value">{{ totalBookings() }}</span>
+        </div>
+        <div class="stat-icon icon-green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+        </div>
       </div>
 
-      <div class="cell stat">
-        <span class="stat-label">Menunggu Persetujuan</span>
-        <span class="stat-value accent-amber">{{ totalPending() }}</span>
-        <span class="stat-note">perlu tindakan approver</span>
+      <div class="stat-card">
+        <div>
+          <span class="stat-label">Menunggu Persetujuan</span>
+          <span class="stat-value accent-amber">{{ totalPending() }}</span>
+        </div>
+        <div class="stat-icon icon-amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>
+        </div>
       </div>
 
-      <div class="cell stat">
-        <span class="stat-label">Rata-rata Konsumsi BBM</span>
-        <span class="stat-value">{{ avgFuel() }}</span>
-        <span class="stat-note">km / liter</span>
+      <div class="stat-card">
+        <div>
+          <span class="stat-label">Rata-rata Konsumsi BBM</span>
+          <span class="stat-value">{{ avgFuel() }}<small> km/l</small></span>
+        </div>
+        <div class="stat-icon icon-green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><path d="M12 2s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"></path></svg>
+        </div>
       </div>
+    </div>
 
+    <div class="row-2col">
       <div class="cell chart-cell">
         <div class="cell-header">
-          <h3>Pemakaian per Kendaraan</h3>
-          <span class="cell-sub">Frekuensi pemesanan tiap unit</span>
+          <h3>Tren Pemesanan</h3>
+          <span class="cell-sub">7 hari terakhir</span>
         </div>
         <div class="chart-wrap">
-          <canvas #usageCanvas></canvas>
+          <canvas #trendCanvas></canvas>
         </div>
       </div>
 
-      <div class="cell status-cell">
+      <div class="cell">
         <div class="cell-header">
-          <h3>Status Pemesanan</h3>
-          <span class="cell-sub">Distribusi status saat ini</span>
+          <h3>Distribusi Kepemilikan</h3>
+          <span class="cell-sub">Milik perusahaan vs sewa</span>
         </div>
-        <div class="chart-wrap chart-wrap-donut">
-          <canvas #statusCanvas></canvas>
+        <div class="chart-wrap">
+          <canvas #ownershipCanvas></canvas>
         </div>
       </div>
+    </div>
 
-      <div class="cell recent-cell">
+    <div class="row-2col">
+      <div class="cell">
         <div class="cell-header">
           <h3>Pemesanan Terbaru</h3>
-          <span class="cell-sub">5 aktivitas terakhir</span>
         </div>
-
-        <div class="recent-list">
+        <div class="list">
           @for (b of recentBookings(); track b.id) {
-            <div class="recent-row">
-              <div class="recent-main">
-                <span class="recent-code">{{ b.booking_code }}</span>
-                <span class="recent-vehicle">{{ b.vehicle_name }}</span>
+            <div class="list-row">
+              <div class="list-main">
+                <span class="list-code">{{ b.booking_code }}</span>
+                <span class="list-sub">{{ b.vehicle_name }}</span>
               </div>
               <span class="badge" [class]="statusClass(b.status)">{{ statusLabel(b.status) }}</span>
             </div>
           } @empty {
             <p class="empty-note">Belum ada pemesanan</p>
           }
+        </div>
+      </div>
+
+      <div class="cell">
+        <div class="cell-header">
+          <h3>Pengingat Servis</h3>
+          <span class="cell-sub">Jadwal 14 hari ke depan</span>
+        </div>
+        <div class="list">
+          @for (v of upcomingService(); track v.id) {
+            <div class="list-row">
+              <div class="list-main">
+                <span class="list-code">{{ v.name }}</span>
+                <span class="list-sub">{{ v.license_plate }}</span>
+              </div>
+              <span class="badge" [class]="daysUntil(v.service_schedule) < 0 ? 'badge-red' : 'badge-amber'">
+                {{ daysUntil(v.service_schedule) < 0 ? 'Lewat jadwal' : (daysUntil(v.service_schedule) + ' hari lagi') }}
+              </span>
+            </div>
+          } @empty {
+            <p class="empty-note">Tidak ada jadwal servis dalam waktu dekat</p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="fleet-banner">
+      <div class="banner-left">
+        <h3>Ketersediaan Armada</h3>
+        <div class="gauge-wrap">
+          <canvas #gaugeCanvas></canvas>
+          <div class="gauge-value">{{ availabilityRate() }}%</div>
+        </div>
+        <span class="gauge-label">kendaraan siap digunakan hari ini</span>
+      </div>
+
+      <div class="banner-right">
+        <div class="banner-metric">
+          <span class="metric-value">{{ approvalRate() }}%</span>
+          <span class="metric-label">Tingkat Persetujuan Pemesanan</span>
+        </div>
+        <div class="banner-metric">
+          <span class="metric-value">{{ totalVehicles() }}</span>
+          <span class="metric-label">Total Unit Terdaftar</span>
         </div>
       </div>
     </div>

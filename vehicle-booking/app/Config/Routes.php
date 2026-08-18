@@ -12,9 +12,13 @@ $routes->group("api", ["filter" => "cors"], function ($routes) {
     $routes->get("users", "Users::index");
     $routes->get("drivers", "Drivers::index");
     $routes->post("drivers", "Drivers::create");
+    $routes->put("drivers/(:num)", "Drivers::update/$1");
+    $routes->delete("drivers/(:num)", "Drivers::delete/$1");
     $routes->get("bookings", "Bookings::index");
     $routes->get("bookings/(:num)", "Bookings::show/$1");
     $routes->post("bookings", "Bookings::create");
+    $routes->put("bookings/(:num)", "Bookings::update/$1");
+    $routes->delete("bookings/(:num)", "Bookings::delete/$1");
     $routes->get("approvals", "Approvals::index");
     $routes->post("approvals/(:num)/approve", "Approvals::approve/$1");
     $routes->post("approvals/(:num)/reject", "Approvals::reject/$1");

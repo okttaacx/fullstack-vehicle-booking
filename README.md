@@ -1,6 +1,20 @@
+<div align="center">
+
 # 🚗 Vehicle Booking System
 
+<img src="https://readme-typing-svg.demolab.com?font=Baloo+2&size=22&pause=1000&color=16A34A&center=true&vCenter=true&width=600&lines=Kelola+pemesanan+kendaraan+perusahaan;Persetujuan+berjenjang+2+level;Monitoring+BBM+%26+jadwal+service;Dashboard+%26+laporan+real-time" alt="Typing SVG" />
+
+<p>
+  <img src="https://img.shields.io/badge/PHP-8.3-777BB4?style=for-the-badge&logo=php&logoColor=white" />
+  <img src="https://img.shields.io/badge/CodeIgniter-4.7-EF4223?style=for-the-badge&logo=codeigniter&logoColor=white" />
+  <img src="https://img.shields.io/badge/Angular-21-DD0031?style=for-the-badge&logo=angular&logoColor=white" />
+  <img src="https://img.shields.io/badge/MySQL-8.x-4479A1?style=for-the-badge&logo=mysql&logoColor=white" />
+  <img src="https://img.shields.io/badge/Status-Active-16A34A?style=for-the-badge" />
+</p>
+
 Aplikasi pemesanan kendaraan perusahaan (tambang nikel) untuk memonitor kendaraan, konsumsi BBM, jadwal service, dan riwayat pemakaian — lengkap dengan alur persetujuan berjenjang (2 level).
+
+</div>
 
 ---
 
@@ -14,6 +28,7 @@ Aplikasi pemesanan kendaraan perusahaan (tambang nikel) untuk memonitor kendaraa
 - [Alur Bisnis / Panduan Penggunaan](#-alur-bisnis--panduan-penggunaan)
 - [Skema Database](#-skema-database)
 - [Daftar API Endpoint](#-daftar-api-endpoint)
+- [Roadmap](#-roadmap)
 - [Troubleshooting Umum](#-troubleshooting-umum)
 
 ---
@@ -36,16 +51,18 @@ Aplikasi pemesanan kendaraan perusahaan (tambang nikel) untuk memonitor kendaraa
 
 - **Autentikasi** — login berbasis role (`admin` dan `approver`), session disimpan di browser.
 - **Manajemen Kendaraan** — CRUD lengkap (tambah, lihat, edit, hapus), pencarian, filter tipe/kepemilikan, riwayat pemakaian per kendaraan, foto representatif per tipe.
+- **Manajemen Driver** — CRUD lengkap, pencarian, serta **peringatan otomatis** jika masa berlaku SIM driver sudah habis atau akan habis dalam 30 hari ke depan.
 - **Pemesanan Kendaraan**
   - Admin membuat pemesanan (pilih kendaraan, driver, dan 2 approver).
   - **Input nama driver bebas diketik** — jika nama belum terdaftar, sistem otomatis membuat data driver baru; jika sudah ada, otomatis tersambung ke data yang sama (dengan bantuan `<datalist>` sebagai saran).
+  - **Validasi bentrok jadwal** — sistem menolak pemesanan baru jika kendaraan yang sama sudah dipesan (dengan status aktif) pada rentang waktu yang tumpang tindih, lengkap dengan pesan yang menyebutkan kode booking penyebab bentrok.
   - **Edit & Hapus pemesanan** — hanya dapat dilakukan selama status masih *"Menunggu Persetujuan L1"* (belum ada approver yang bertindak). Setelah disetujui/ditolak salah satu approver, data terkunci demi menjaga integritas alur persetujuan.
   - Pencarian, filter status, sorting, dan pagination pada daftar pemesanan.
   - Alasan penolakan (jika ada) dapat dilihat admin melalui detail pemesanan.
 - **Persetujuan Berjenjang (2 Level)** — approver Level 1 menyetujui/menolak terlebih dahulu, baru approver Level 2 bisa bertindak.
 - **Dashboard** — ringkasan total kendaraan, total pemesanan, tren 7 hari terakhir, distribusi kepemilikan armada, ketersediaan armada, dan pengingat jadwal service.
 - **Export Laporan Excel** — laporan pemesanan periodik (bisa difilter rentang tanggal) diunduh dalam format `.xlsx`.
-- **Log Aktivitas** — setiap aksi penting (login, buat/ubah/hapus kendaraan, buat/ubah/hapus/approve/reject pemesanan) tercatat di tabel `activity_logs`.
+- **Log Aktivitas** — setiap aksi penting (login, buat/ubah/hapus kendaraan & driver, buat/ubah/hapus/approve/reject pemesanan) tercatat di tabel `activity_logs`.
 
 ---
 
@@ -56,7 +73,7 @@ vehicle-booking-system/
 ├── vehicle-booking/            # Backend — CodeIgniter 4
 │   ├── app/
 │   │   ├── Controllers/        # Auth, Users, Vehicles, Drivers, Bookings, Approvals, Reports
-│   │   ├── Models/              # UsersModel, VehiclesModel, dll.
+│   │   ├── Models/              # UsersModel, VehiclesModel, DriversModel, dll.
 │   │   ├── Database/Migrations/
 │   │   ├── Filters/             # CorsFilter
 │   │   └── Config/Routes.php
@@ -70,6 +87,7 @@ vehicle-booking-system/
             ├── login/
             ├── dashboard/
             ├── vehicles/
+            ├── drivers/
             ├── bookings/
             └── approvals/
 ```
@@ -154,7 +172,12 @@ Sistem punya 2 peran: **Admin** (membuat pemesanan) dan **Approver** (menyetujui
 ```
 1. Admin login → menu "Pemesanan" → klik "Buat Pemesanan"
    Pilih kendaraan, ketik nama driver (opsional — otomatis dibuat jika belum ada),
-   pilih approver Level 1, approver Level 2, dan tanggal
+   pilih approver Level 1, approver Level 2, dan tanggal.
+
+   Sistem otomatis memvalidasi:
+   - Tanggal selesai harus setelah tanggal mulai
+   - Kendaraan tidak sedang dipesan orang lain pada rentang waktu yang sama
+
    → status booking: MENUNGGU L1 (pending)
 
    Selama masih status ini, admin masih bisa mengedit atau menghapus pemesanan
@@ -179,6 +202,7 @@ Sistem punya 2 peran: **Admin** (membuat pemesanan) dan **Approver** (menyetujui
 |---|---|---|
 | **Dashboard** | Ringkasan statistik & grafik operasional | Semua role |
 | **Kendaraan** | Daftar kendaraan, detail, riwayat pemakaian | Lihat: semua role. Tambah/Edit/Hapus: **Admin** |
+| **Driver** | Daftar driver, peringatan masa berlaku SIM | Lihat: semua role. Tambah/Edit/Hapus: **Admin** |
 | **Pemesanan** | Riwayat semua pemesanan, edit/hapus (jika masih pending), export Excel | Lihat: semua role. Buat/Edit/Hapus: **Admin** |
 | **Approval** | Daftar pemesanan yang perlu disetujui user yang login | Hanya tampil untuk role **Approver** |
 
@@ -186,9 +210,10 @@ Sistem punya 2 peran: **Admin** (membuat pemesanan) dan **Approver** (menyetujui
 
 1. Login `admin` / `admin123` → buka **Pemesanan** → buat 1 pemesanan baru, ketik nama driver bebas, pilih approver Level 1 = `spv_tambang1`, Level 2 = `manager_hq`.
 2. (Opsional) Selama status masih "Menunggu L1", coba **Edit** data lewat menu "..." untuk mengubah tanggal/tujuan.
-3. Logout → login `spv_tambang1` → buka **Approval** → klik **Setujui** pada pemesanan tadi.
-4. Logout → login `manager_hq` → buka **Approval** → pemesanan kini muncul di daftarnya → klik **Setujui**.
-5. Login kembali sebagai `admin` → cek **Pemesanan**, status sudah berubah menjadi **Disetujui**, dan tombol Edit/Hapus sudah tidak tersedia lagi untuk data ini.
+3. Coba buat pemesanan lain dengan kendaraan & rentang tanggal yang sama — sistem akan menolak dengan pesan bentrok jadwal.
+4. Logout → login `spv_tambang1` → buka **Approval** → klik **Setujui** pada pemesanan tadi.
+5. Logout → login `manager_hq` → buka **Approval** → pemesanan kini muncul di daftarnya → klik **Setujui**.
+6. Login kembali sebagai `admin` → cek **Pemesanan**, status sudah berubah menjadi **Disetujui**, dan tombol Edit/Hapus sudah tidak tersedia lagi untuk data ini.
 
 ### Export Laporan
 
@@ -204,7 +229,7 @@ Tabel utama:
 |---|---|
 | `users` | Data admin & approver (kolom `role`, `level` untuk approver) |
 | `vehicles` | Data kendaraan (`type`: angkutan_orang/angkutan_barang, `ownership`: milik_perusahaan/sewa) |
-| `drivers` | Data driver/pengemudi (dapat ditambahkan otomatis saat membuat pemesanan) |
+| `drivers` | Data driver/pengemudi, termasuk `license_expiry` untuk masa berlaku SIM (dapat ditambahkan otomatis saat membuat pemesanan) |
 | `vehicle_bookings` | Data pemesanan kendaraan |
 | `booking_approvals` | Baris persetujuan per level per pemesanan (status, notes, approved_at) |
 | `vehicle_service_schedule` | Jadwal service kendaraan |
@@ -229,15 +254,35 @@ Base URL: `http://localhost:8080/api`
 | DELETE | `/vehicles/{id}` | Hapus kendaraan |
 | GET | `/drivers` | Daftar driver |
 | POST | `/drivers` | Tambah driver (juga dipanggil otomatis saat nama driver baru diketik di form pemesanan) |
+| PUT | `/drivers/{id}` | Update driver |
+| DELETE | `/drivers/{id}` | Hapus driver |
 | GET | `/bookings` | Daftar pemesanan (termasuk `rejection_reason` jika status ditolak) |
 | GET | `/bookings/{id}` | Detail pemesanan beserta riwayat approval |
-| POST | `/bookings` | Buat pemesanan baru |
-| PUT | `/bookings/{id}` | Update pemesanan — **hanya jika status masih pending** |
+| POST | `/bookings` | Buat pemesanan baru — memvalidasi rentang tanggal & bentrok jadwal (respons `409` jika bentrok) |
+| PUT | `/bookings/{id}` | Update pemesanan — **hanya jika status masih pending**, tetap divalidasi bentrok jadwal |
 | DELETE | `/bookings/{id}` | Hapus pemesanan — **hanya jika status masih pending** |
 | GET | `/approvals?approver_id={id}` | Seluruh riwayat approval milik seorang approver (pending/approved/rejected) |
 | POST | `/approvals/{id}/approve` | Menyetujui pemesanan |
 | POST | `/approvals/{id}/reject` | Menolak pemesanan (menyertakan `notes` alasan) |
 | GET | `/reports/bookings/export` | Export laporan pemesanan ke Excel (parameter opsional `start` & `end`) |
+
+---
+
+## 🗺 Roadmap
+
+Fitur yang direncanakan untuk pengembangan selanjutnya:
+
+- [x] Validasi bentrok jadwal pemesanan (double booking)
+- [x] Manajemen Driver (CRUD + peringatan masa berlaku SIM)
+- [ ] Log BBM & odometer per pemakaian kendaraan
+- [ ] Riwayat service kendaraan (bukan hanya jadwal berikutnya)
+- [ ] Kalender visual pemakaian kendaraan
+- [ ] Halaman kelola User/Approver dari UI
+- [ ] Status "Selesai" untuk menandai kendaraan telah dikembalikan
+- [ ] Ganti password mandiri untuk setiap user
+- [ ] Riwayat aktivitas (activity log) yang dapat dilihat di UI
+- [ ] Notifikasi in-app
+- [ ] Optimasi tampilan mobile / PWA
 
 ---
 
@@ -256,13 +301,22 @@ Pastikan elemen `<canvas>` sudah ter-render di DOM sebelum Chart.js dipanggil (g
 Karena komponen bertipe *standalone*, pipe bawaan Angular seperti `SlicePipe` harus diimpor eksplisit dan didaftarkan di array `imports` komponen terkait.
 
 **Dropdown menu "..." pada baris/kartu terakhir terpotong**
-Pastikan `overflow: hidden` tidak diterapkan langsung pada container yang membungkus dropdown; gunakan `border-radius` pada elemen anak (mis. baris pertama/terakhir tabel) alih-alih pada container luar.
+Pastikan `overflow: hidden` tidak diterapkan langsung pada container yang membungkus dropdown; gunakan `border-radius` pada elemen anak (mis. baris pertama/terakhir tabel) alih-alih pada container luar. Jika baris berada di posisi paling bawah, arahkan dropdown terbuka ke atas (`bottom` bukan `top`) agar tidak keluar dari area yang terlihat.
+
+**Booking gagal disimpan dengan pesan bentrok jadwal**
+Ini bukan bug — validasi memang menolak pemesanan kendaraan yang sama pada rentang waktu yang tumpang tindih dengan pemesanan aktif lain. Pilih kendaraan lain atau ubah rentang tanggal.
 
 **Server backend mati sendiri**
 `php spark serve` berjalan di foreground — jangan tutup terminal tempat command ini dijalankan, dan jangan pakai terminal yang sama untuk command lain.
 
 ---
 
+<div align="center">
+
 ## 👤 Kontributor
 
- Proyek ini dikembangkan secara mandiri sebagai sarana pembelajaran dan eksplorasi dalam membangun sistem web berbasis Fullstack (Angular & CodeIgniter).
+Proyek ini dikembangkan secara mandiri sebagai sarana pembelajaran dan eksplorasi dalam membangun sistem web berbasis Fullstack (Angular & CodeIgniter).
+
+<img src="https://readme-typing-svg.demolab.com?font=Baloo+2&size=14&pause=1500&color=64748B&center=true&vCenter=true&width=400&lines=Made+with+%E2%98%95+and+a+lot+of+debugging" alt="Footer" />
+
+</div>

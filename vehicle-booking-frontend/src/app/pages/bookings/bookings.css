@@ -116,7 +116,6 @@
   font-size: 13px;
 }
 
-/* Stats */
 .stat-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -174,7 +173,6 @@
 .stat-amber .stat-icon { color: #d97706; }
 .stat-red .stat-icon { color: #dc2626; }
 
-/* Toolbar */
 .toolbar {
   display: flex;
   justify-content: space-between;
@@ -277,12 +275,12 @@
   cursor: pointer;
 }
 
-/* Table */
+/* Table — border-radius dipindah ke sini (bukan overflow:hidden di container)
+   supaya dropdown menu "..." di baris terakhir tidak terpotong */
 .table-card {
   background: white;
   border-radius: 18px;
   border: 1px solid #eef2f0;
-  overflow: hidden;
   box-shadow: 0 1px 2px rgba(15, 61, 46, 0.05);
 }
 
@@ -295,6 +293,24 @@
 .book-table {
   width: 100%;
   border-collapse: collapse;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.book-table thead tr:first-child th:first-child {
+  border-top-left-radius: 18px;
+}
+
+.book-table thead tr:first-child th:last-child {
+  border-top-right-radius: 18px;
+}
+
+.book-table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 18px;
+}
+
+.book-table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 18px;
 }
 
 .book-table thead {
@@ -479,7 +495,6 @@
   background: #f7faf8;
 }
 
-/* Pagination */
 .pagination {
   display: flex;
   justify-content: space-between;
@@ -531,7 +546,6 @@
   font-size: 13px;
 }
 
-/* Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;

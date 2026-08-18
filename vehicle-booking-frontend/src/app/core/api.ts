@@ -28,6 +28,10 @@ export class Api {
     return this.http.get<any>(`${this.base}/drivers`);
   }
 
+  createDriver(payload: any) {
+    return this.http.post<any>(`${this.base}/drivers`, payload);
+  }
+
   getApprovers() {
     return this.http.get<any>(`${this.base}/users?role=approver`);
   }

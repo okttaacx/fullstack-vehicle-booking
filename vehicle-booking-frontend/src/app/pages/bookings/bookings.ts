@@ -35,7 +35,7 @@ export class Bookings implements OnInit {
   formSuccess = signal('');
 
   vehicleId = '';
-  driverId = '';
+  driverName = '';
   approverL1Id = '';
   approverL2Id = '';
   purpose = '';
@@ -180,7 +180,7 @@ export class Bookings implements OnInit {
 
   private resetForm() {
     this.vehicleId = '';
-    this.driverId = '';
+    this.driverName = '';
     this.approverL1Id = '';
     this.approverL2Id = '';
     this.purpose = '';
@@ -204,11 +204,44 @@ export class Bookings implements OnInit {
     }
 
     this.submitting.set(true);
+    this.resolveDriverId((driverId) => this.createBookingWithDriver(currentUser.id, driverId));
+  }
 
+  private resolveDriverId(callback: (driverId: string | null) => void) {
+    const typedName = this.driverName.trim();
+
+    if (!typedName) {
+      callback(null);
+      return;
+    }
+
+    const existing = this.drivers().find(
+      (d: any) => d.name.trim().toLowerCase() === typedName.toLowerCase()
+    );
+
+    if (existing) {
+      callback(existing.id);
+      return;
+    }
+
+    this.api.createDriver({ name: typedName }).subscribe({
+      next: (res) => {
+        const newId = res.data?.id;
+        this.api.getDrivers().subscribe({ next: (r) => this.drivers.set(r.data ?? []) });
+        callback(newId ?? null);
+      },
+      error: () => {
+        this.formError.set('Gagal menambahkan driver baru');
+        this.submitting.set(false);
+      },
+    });
+  }
+
+  private createBookingWithDriver(requestedBy: string, driverId: string | null) {
     const payload = {
-      requested_by: currentUser.id,
+      requested_by: requestedBy,
       vehicle_id: this.vehicleId,
-      driver_id: this.driverId || null,
+      driver_id: driverId,
       purpose: this.purpose || null,
       destination: this.destination || null,
       start_date: this.startDate,

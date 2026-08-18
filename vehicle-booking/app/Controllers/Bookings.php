@@ -24,7 +24,6 @@ class Bookings extends ResourceController
             ->get()
             ->getResultArray();
 
-        // Tambahkan alasan penolakan (jika ada) dari booking_approvals
         foreach ($bookings as &$b) {
             $b["rejection_reason"] = null;
             if ($b["status"] === "rejected") {
@@ -120,6 +119,65 @@ class Bookings extends ResourceController
             "status"  => 201,
             "message" => "Pemesanan berhasil dibuat",
             "data"    => ["id" => $bookingId, "booking_code" => $bookingCode],
+        ]);
+    }
+
+    // PUT /api/bookings/{id}
+    // Hanya bisa diubah selama status masih "pending" (belum ada approval sama sekali)
+    public function update($id = null)
+    {
+        $bookingModel = new VehicleBookingsModel();
+        $booking = $bookingModel->find($id);
+
+        if (! $booking) {
+            return $this->failNotFound("Booking tidak ditemukan");
+        }
+
+        if ($booking["status"] !== "pending") {
+            return $this->fail("Pemesanan yang sudah diproses approver tidak dapat diubah", 400);
+        }
+
+        $data = $this->request->getJSON(true);
+
+        $bookingModel->update($id, [
+            "vehicle_id"  => $data["vehicle_id"] ?? $booking["vehicle_id"],
+            "driver_id"   => array_key_exists("driver_id", $data) ? $data["driver_id"] : $booking["driver_id"],
+            "purpose"     => $data["purpose"] ?? $booking["purpose"],
+            "destination" => $data["destination"] ?? $booking["destination"],
+            "start_date"  => $data["start_date"] ?? $booking["start_date"],
+            "end_date"    => $data["end_date"] ?? $booking["end_date"],
+        ]);
+
+        ActivityLogger::log(null, "update_booking", "Memperbarui pemesanan ID {$id}");
+
+        return $this->respond([
+            "status"  => 200,
+            "message" => "Pemesanan berhasil diperbarui",
+        ]);
+    }
+
+    // DELETE /api/bookings/{id}
+    // Hanya bisa dihapus selama status masih "pending"
+    public function delete($id = null)
+    {
+        $bookingModel = new VehicleBookingsModel();
+        $booking = $bookingModel->find($id);
+
+        if (! $booking) {
+            return $this->failNotFound("Booking tidak ditemukan");
+        }
+
+        if ($booking["status"] !== "pending") {
+            return $this->fail("Pemesanan yang sudah diproses approver tidak dapat dihapus", 400);
+        }
+
+        $bookingModel->delete($id);
+
+        ActivityLogger::log(null, "delete_booking", "Menghapus pemesanan: " . $booking["booking_code"]);
+
+        return $this->respond([
+            "status"  => 200,
+            "message" => "Pemesanan berhasil dihapus",
         ]);
     }
 }

@@ -232,12 +232,18 @@
 
           <div class="field">
             <label>Driver (opsional)</label>
-            <select [(ngModel)]="driverId">
-              <option value="">-- Tanpa Driver --</option>
+            <input
+              type="text"
+              [(ngModel)]="driverName"
+              list="driver-suggestions"
+              placeholder="Ketik nama driver atau pilih dari saran"
+              autocomplete="off"
+            >
+            <datalist id="driver-suggestions">
               @for (d of drivers(); track d.id) {
-                <option [value]="d.id">{{ d.name }}</option>
+                <option [value]="d.name"></option>
               }
-            </select>
+            </datalist>
           </div>
 
           <div class="field">

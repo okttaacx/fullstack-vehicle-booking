@@ -35,12 +35,17 @@ Aplikasi pemesanan kendaraan perusahaan (tambang nikel) untuk memonitor kendaraa
 ## ✨ Fitur
 
 - **Autentikasi** — login berbasis role (`admin` dan `approver`), session disimpan di browser.
-- **Manajemen Kendaraan** — CRUD lengkap (tambah, lihat, edit, hapus), pencarian, filter tipe/kepemilikan, riwayat pemakaian per kendaraan.
-- **Pemesanan Kendaraan** — admin membuat pemesanan (pilih kendaraan, driver, dan 2 approver), dilengkapi pencarian, filter status, sorting, dan pagination.
-- **Persetujuan Berjenjang (2 Level)** — approver Level 1 menyetujui/menolak terlebih dahulu, baru approver Level 2 bisa bertindak. Alasan penolakan tercatat dan bisa dilihat admin.
+- **Manajemen Kendaraan** — CRUD lengkap (tambah, lihat, edit, hapus), pencarian, filter tipe/kepemilikan, riwayat pemakaian per kendaraan, foto representatif per tipe.
+- **Pemesanan Kendaraan**
+  - Admin membuat pemesanan (pilih kendaraan, driver, dan 2 approver).
+  - **Input nama driver bebas diketik** — jika nama belum terdaftar, sistem otomatis membuat data driver baru; jika sudah ada, otomatis tersambung ke data yang sama (dengan bantuan `<datalist>` sebagai saran).
+  - **Edit & Hapus pemesanan** — hanya dapat dilakukan selama status masih *"Menunggu Persetujuan L1"* (belum ada approver yang bertindak). Setelah disetujui/ditolak salah satu approver, data terkunci demi menjaga integritas alur persetujuan.
+  - Pencarian, filter status, sorting, dan pagination pada daftar pemesanan.
+  - Alasan penolakan (jika ada) dapat dilihat admin melalui detail pemesanan.
+- **Persetujuan Berjenjang (2 Level)** — approver Level 1 menyetujui/menolak terlebih dahulu, baru approver Level 2 bisa bertindak.
 - **Dashboard** — ringkasan total kendaraan, total pemesanan, tren 7 hari terakhir, distribusi kepemilikan armada, ketersediaan armada, dan pengingat jadwal service.
 - **Export Laporan Excel** — laporan pemesanan periodik (bisa difilter rentang tanggal) diunduh dalam format `.xlsx`.
-- **Log Aktivitas** — setiap aksi penting (login, buat/ubah/hapus kendaraan, buat/approve/reject pemesanan) tercatat di tabel `activity_logs`.
+- **Log Aktivitas** — setiap aksi penting (login, buat/ubah/hapus kendaraan, buat/ubah/hapus/approve/reject pemesanan) tercatat di tabel `activity_logs`.
 
 ---
 
@@ -117,7 +122,7 @@ ng serve
 
 Frontend akan berjalan di `http://localhost:4200`.
 
-> ⚠️ **Backend dan frontend harus berjalan bersamaan** di dua terminal terpisah — frontend memanggil API ke `http://localhost:8080/api/...`.
+> ⚠️ **Backend dan frontend harus berjalan bersamaan** di dua terminal terpisah — frontend memanggil API ke `http://localhost:8080/api/...`. Jangan gunakan terminal yang sama untuk menjalankan command lain selagi server aktif.
 
 ---
 
@@ -148,18 +153,24 @@ Sistem punya 2 peran: **Admin** (membuat pemesanan) dan **Approver** (menyetujui
 
 ```
 1. Admin login → menu "Pemesanan" → klik "Buat Pemesanan"
-   Pilih kendaraan, driver (opsional), approver Level 1, approver Level 2, dan tanggal
-   → status booking: PENDING (menunggu approver Level 1)
+   Pilih kendaraan, ketik nama driver (opsional — otomatis dibuat jika belum ada),
+   pilih approver Level 1, approver Level 2, dan tanggal
+   → status booking: MENUNGGU L1 (pending)
+
+   Selama masih status ini, admin masih bisa mengedit atau menghapus pemesanan
+   melalui menu "..." pada baris data.
 
 2. Approver Level 1 login → menu "Approval"
    Melihat daftar pemesanan yang menunggu persetujuannya → klik "Setujui" atau "Tolak"
-   → jika disetujui, status berubah: APPROVED_L1 (menunggu approver Level 2)
-   → jika ditolak, status: REJECTED (alur berhenti, alasan tercatat)
+   → jika disetujui, status berubah: MENUNGGU L2 (approved_l1)
+   → jika ditolak, status: DITOLAK (alur berhenti, alasan tercatat)
+
+   Setelah tahap ini, pemesanan TIDAK BISA lagi diedit/dihapus oleh admin.
 
 3. Approver Level 2 login → menu "Approval"
    Pemesanan baru muncul di daftarnya SETELAH Level 1 menyetujui → klik "Setujui" atau "Tolak"
-   → jika disetujui, status akhir: APPROVED_L2 (pemesanan siap digunakan)
-   → jika ditolak, status: REJECTED
+   → jika disetujui, status akhir: DISETUJUI (approved_l2)
+   → jika ditolak, status: DITOLAK
 ```
 
 ### Peta Halaman
@@ -168,15 +179,16 @@ Sistem punya 2 peran: **Admin** (membuat pemesanan) dan **Approver** (menyetujui
 |---|---|---|
 | **Dashboard** | Ringkasan statistik & grafik operasional | Semua role |
 | **Kendaraan** | Daftar kendaraan, detail, riwayat pemakaian | Lihat: semua role. Tambah/Edit/Hapus: **Admin** |
-| **Pemesanan** | Riwayat semua pemesanan + export Excel | Lihat: semua role. Buat pemesanan: **Admin** |
+| **Pemesanan** | Riwayat semua pemesanan, edit/hapus (jika masih pending), export Excel | Lihat: semua role. Buat/Edit/Hapus: **Admin** |
 | **Approval** | Daftar pemesanan yang perlu disetujui user yang login | Hanya tampil untuk role **Approver** |
 
 ### Contoh Uji Coba Alur Lengkap
 
-1. Login `admin` / `admin123` → buka **Pemesanan** → buat 1 pemesanan baru, pilih approver Level 1 = `spv_tambang1`, Level 2 = `manager_hq`.
-2. Logout → login `spv_tambang1` → buka **Approval** → klik **Setujui** pada pemesanan tadi.
-3. Logout → login `manager_hq` → buka **Approval** → pemesanan kini muncul di daftarnya → klik **Setujui**.
-4. Login kembali sebagai `admin` → cek **Pemesanan**, status sudah berubah menjadi **Disetujui**.
+1. Login `admin` / `admin123` → buka **Pemesanan** → buat 1 pemesanan baru, ketik nama driver bebas, pilih approver Level 1 = `spv_tambang1`, Level 2 = `manager_hq`.
+2. (Opsional) Selama status masih "Menunggu L1", coba **Edit** data lewat menu "..." untuk mengubah tanggal/tujuan.
+3. Logout → login `spv_tambang1` → buka **Approval** → klik **Setujui** pada pemesanan tadi.
+4. Logout → login `manager_hq` → buka **Approval** → pemesanan kini muncul di daftarnya → klik **Setujui**.
+5. Login kembali sebagai `admin` → cek **Pemesanan**, status sudah berubah menjadi **Disetujui**, dan tombol Edit/Hapus sudah tidak tersedia lagi untuk data ini.
 
 ### Export Laporan
 
@@ -192,7 +204,7 @@ Tabel utama:
 |---|---|
 | `users` | Data admin & approver (kolom `role`, `level` untuk approver) |
 | `vehicles` | Data kendaraan (`type`: angkutan_orang/angkutan_barang, `ownership`: milik_perusahaan/sewa) |
-| `drivers` | Data driver/pengemudi |
+| `drivers` | Data driver/pengemudi (dapat ditambahkan otomatis saat membuat pemesanan) |
 | `vehicle_bookings` | Data pemesanan kendaraan |
 | `booking_approvals` | Baris persetujuan per level per pemesanan (status, notes, approved_at) |
 | `vehicle_service_schedule` | Jadwal service kendaraan |
@@ -216,27 +228,35 @@ Base URL: `http://localhost:8080/api`
 | PUT | `/vehicles/{id}` | Update kendaraan |
 | DELETE | `/vehicles/{id}` | Hapus kendaraan |
 | GET | `/drivers` | Daftar driver |
-| POST | `/drivers` | Tambah driver |
-| GET | `/bookings` | Daftar pemesanan |
-| GET | `/bookings/{id}` | Detail pemesanan |
+| POST | `/drivers` | Tambah driver (juga dipanggil otomatis saat nama driver baru diketik di form pemesanan) |
+| GET | `/bookings` | Daftar pemesanan (termasuk `rejection_reason` jika status ditolak) |
+| GET | `/bookings/{id}` | Detail pemesanan beserta riwayat approval |
 | POST | `/bookings` | Buat pemesanan baru |
-| GET | `/approvals?approver_id={id}` | Daftar approval milik seorang approver |
+| PUT | `/bookings/{id}` | Update pemesanan — **hanya jika status masih pending** |
+| DELETE | `/bookings/{id}` | Hapus pemesanan — **hanya jika status masih pending** |
+| GET | `/approvals?approver_id={id}` | Seluruh riwayat approval milik seorang approver (pending/approved/rejected) |
 | POST | `/approvals/{id}/approve` | Menyetujui pemesanan |
-| POST | `/approvals/{id}/reject` | Menolak pemesanan |
-| GET | `/reports/bookings/export` | Export laporan pemesanan ke Excel |
+| POST | `/approvals/{id}/reject` | Menolak pemesanan (menyertakan `notes` alasan) |
+| GET | `/reports/bookings/export` | Export laporan pemesanan ke Excel (parameter opsional `start` & `end`) |
 
 ---
 
 ## 🩹 Troubleshooting Umum
 
 **CORS error di browser**
-Pastikan `php spark serve` aktif dan filter `cors` di `app/Config/Filters.php` sudah terpasang di grup route `api`.
+Pastikan `php spark serve` aktif dan filter `cors` di `app/Config/Filters.php` sudah terpasang di grup route `api`. Untuk endpoint export Excel yang menggunakan `header()` PHP native, header `Access-Control-Allow-Origin` perlu ditambahkan manual di controller `Reports.php`.
 
 **Frontend menampilkan "Cannot GET"**
-Biasanya karena SSR mencoba mengakses `localStorage` di sisi server. Pastikan pengecekan `isPlatformBrowser` digunakan sebelum memanggil Web API browser di service Angular.
+Biasanya karena SSR mencoba mengakses `localStorage` di sisi server. Pastikan pengecekan `isPlatformBrowser` digunakan sebelum memanggil Web API browser di service Angular (`Auth`).
 
 **Grafik dashboard kosong**
-Pastikan elemen `<canvas>` sudah ter-render di DOM sebelum Chart.js dipanggil (gunakan `setTimeout` singkat setelah data selesai dimuat jika diperlukan).
+Pastikan elemen `<canvas>` sudah ter-render di DOM sebelum Chart.js dipanggil (gunakan `setTimeout` singkat setelah data selesai dimuat).
+
+**`NG8004: No pipe found with name 'slice'`**
+Karena komponen bertipe *standalone*, pipe bawaan Angular seperti `SlicePipe` harus diimpor eksplisit dan didaftarkan di array `imports` komponen terkait.
+
+**Dropdown menu "..." pada baris/kartu terakhir terpotong**
+Pastikan `overflow: hidden` tidak diterapkan langsung pada container yang membungkus dropdown; gunakan `border-radius` pada elemen anak (mis. baris pertama/terakhir tabel) alih-alih pada container luar.
 
 **Server backend mati sendiri**
 `php spark serve` berjalan di foreground — jangan tutup terminal tempat command ini dijalankan, dan jangan pakai terminal yang sama untuk command lain.

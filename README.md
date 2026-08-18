@@ -265,4 +265,4 @@ Pastikan `overflow: hidden` tidak diterapkan langsung pada container yang membun
 
 ## 👤 Kontributor
 
-Dibangun sebagai bagian dari technical test **Fullstack Developer (Intern)**.
+ Proyek ini dikembangkan secara mandiri sebagai sarana pembelajaran dan eksplorasi dalam membangun sistem web berbasis Fullstack (Angular & CodeIgniter).

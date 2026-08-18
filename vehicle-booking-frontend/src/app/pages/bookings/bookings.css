@@ -275,8 +275,6 @@
   cursor: pointer;
 }
 
-/* Table — border-radius dipindah ke sini (bukan overflow:hidden di container)
-   supaya dropdown menu "..." di baris terakhir tidak terpotong */
 .table-card {
   background: white;
   border-radius: 18px;
@@ -465,9 +463,13 @@
   background: #f8faf9;
 }
 
+/* Dropdown dibuka ke ATAS tombol (bukan ke bawah) supaya baris/kartu
+   di posisi paling bawah tabel tetap terlihat penuh tanpa perlu scroll
+   ke area yang tidak terjangkau. */
 .menu-dropdown {
   position: absolute;
-  top: 36px;
+  bottom: 36px;
+  top: auto;
   right: 0;
   background: white;
   border-radius: 12px;

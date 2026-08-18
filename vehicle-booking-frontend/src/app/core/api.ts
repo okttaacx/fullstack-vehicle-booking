@@ -32,6 +32,14 @@ export class Api {
     return this.http.post<any>(`${this.base}/drivers`, payload);
   }
 
+  updateDriver(id: number, payload: any) {
+    return this.http.put<any>(`${this.base}/drivers/${id}`, payload);
+  }
+
+  deleteDriver(id: number) {
+    return this.http.delete<any>(`${this.base}/drivers/${id}`);
+  }
+
   getApprovers() {
     return this.http.get<any>(`${this.base}/users?role=approver`);
   }
@@ -46,6 +54,14 @@ export class Api {
 
   createBooking(payload: any) {
     return this.http.post<any>(`${this.base}/bookings`, payload);
+  }
+
+  updateBooking(id: number, payload: any) {
+    return this.http.put<any>(`${this.base}/bookings/${id}`, payload);
+  }
+
+  deleteBooking(id: number) {
+    return this.http.delete<any>(`${this.base}/bookings/${id}`);
   }
 
   getApprovals(approverId: number) {

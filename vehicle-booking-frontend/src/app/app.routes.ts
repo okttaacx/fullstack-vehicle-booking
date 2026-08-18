@@ -14,6 +14,7 @@ export const routes: Routes = [
       { path: 'vehicles', loadComponent: () => import('./pages/vehicles/vehicles').then(m => m.Vehicles) },
       { path: 'bookings', loadComponent: () => import('./pages/bookings/bookings').then(m => m.Bookings) },
       { path: 'approvals', loadComponent: () => import('./pages/approvals/approvals').then(m => m.Approvals) },
+      { path: 'drivers', loadComponent: () => import('./pages/drivers/drivers').then(m => m.Drivers) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },

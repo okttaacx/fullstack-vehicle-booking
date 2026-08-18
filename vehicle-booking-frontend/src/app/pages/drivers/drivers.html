@@ -1,0 +1,129 @@
+<div class="drv">
+  <div class="drv-header">
+    <div>
+      <h1 class="drv-title">Daftar Driver</h1>
+      <p class="drv-sub">Kelola data driver dan masa berlaku SIM</p>
+    </div>
+
+    <div class="header-actions">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="15" height="15"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+        <input type="text" [(ngModel)]="searchTerm" placeholder="Cari driver...">
+      </div>
+
+      @if (auth.isAdmin()) {
+        <button class="btn-primary" (click)="openCreateForm()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="16" height="16"><path d="M12 5v14M5 12h14"></path></svg>
+          Tambah Driver
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+    <p>Memuat data...</p>
+  } @else if (errorMsg()) {
+    <p class="error-text">{{ errorMsg() }}</p>
+  } @else {
+    <div class="drv-grid">
+      @for (d of filteredDrivers(); track d.id) {
+        <div class="drv-card">
+          <div class="drv-card-top">
+            <span class="avatar">{{ initials(d.name) }}</span>
+            <span class="badge" [class.badge-green]="d.status === 'active'" [class.badge-gray]="d.status !== 'active'">
+              {{ statusLabel(d.status) }}
+            </span>
+          </div>
+
+          <h3 class="drv-name">{{ d.name }}</h3>
+          <p class="drv-phone">{{ d.phone || 'Tidak ada nomor telepon' }}</p>
+
+          <div class="drv-meta">
+            <div class="meta-item">
+              <span class="meta-label">No. SIM</span>
+              <span class="meta-value">{{ d.license_number || '-' }}</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Masa Berlaku SIM</span>
+              <span class="meta-value">{{ d.license_expiry || '-' }}</span>
+            </div>
+          </div>
+
+          @if (licenseWarning(d.license_expiry) === 'expired') {
+            <div class="license-alert alert-red">SIM sudah kedaluwarsa</div>
+          } @else if (licenseWarning(d.license_expiry) === 'soon') {
+            <div class="license-alert alert-amber">SIM akan habis {{ licenseDaysLeft(d.license_expiry) }} hari lagi</div>
+          }
+
+          @if (auth.isAdmin()) {
+            <div class="drv-actions">
+              @if (deletingId() === d.id) {
+                <div class="confirm-row">
+                  <span class="confirm-text">Yakin hapus?</span>
+                  <button class="btn-mini btn-danger" (click)="doDelete(d.id)">Ya</button>
+                  <button class="btn-mini btn-ghost" (click)="cancelDelete()">Batal</button>
+                </div>
+              } @else {
+                <button class="btn-outline" (click)="openEditForm(d)">Edit</button>
+                <button class="btn-danger-outline" (click)="confirmDelete(d.id)">Hapus</button>
+              }
+            </div>
+          }
+        </div>
+      } @empty {
+        <div class="empty-state">
+          <p>Belum ada data driver</p>
+        </div>
+      }
+    </div>
+  }
+
+  @if (showForm()) {
+    <div class="modal-overlay" (click)="cancelForm()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">{{ editingId ? 'Edit Driver' : 'Tambah Driver Baru' }}</h3>
+
+        <div class="form-grid">
+          <div class="field">
+            <label>Nama Driver *</label>
+            <input type="text" [(ngModel)]="name" placeholder="Contoh: Budi Santoso">
+          </div>
+
+          <div class="field">
+            <label>Nomor Telepon</label>
+            <input type="text" [(ngModel)]="phone" placeholder="08xxxxxxxxxx">
+          </div>
+
+          <div class="field">
+            <label>Nomor SIM</label>
+            <input type="text" [(ngModel)]="licenseNumber" placeholder="Contoh: 123456789012">
+          </div>
+
+          <div class="field">
+            <label>Masa Berlaku SIM</label>
+            <input type="date" [(ngModel)]="licenseExpiry">
+          </div>
+
+          <div class="field">
+            <label>Status</label>
+            <select [(ngModel)]="status">
+              <option value="active">Aktif</option>
+              <option value="inactive">Nonaktif</option>
+            </select>
+          </div>
+        </div>
+
+        @if (formError()) {
+          <p class="error-text form-error">{{ formError() }}</p>
+        }
+
+        <div class="modal-actions">
+          <button class="btn-primary" (click)="submitDriver()" [disabled]="submitting()">
+            {{ submitting() ? 'Menyimpan...' : 'Simpan' }}
+          </button>
+          <button class="btn-ghost-lg" (click)="cancelForm()">Batal</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

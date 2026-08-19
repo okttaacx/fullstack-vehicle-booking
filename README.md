@@ -50,19 +50,21 @@ Aplikasi pemesanan kendaraan perusahaan (tambang nikel) untuk memonitor kendaraa
 ## ✨ Fitur
 
 - **Autentikasi** — login berbasis role (`admin` dan `approver`), session disimpan di browser.
-- **Manajemen Kendaraan** — CRUD lengkap (tambah, lihat, edit, hapus), pencarian, filter tipe/kepemilikan, riwayat pemakaian per kendaraan, foto representatif per tipe.
-- **Manajemen Driver** — CRUD lengkap, pencarian, serta **peringatan otomatis** jika masa berlaku SIM driver sudah habis atau akan habis dalam 30 hari ke depan.
+- **Manajemen Kendaraan** — CRUD lengkap (tambah, lihat, edit, hapus), pencarian, filter tipe/kepemilikan, **foto kendaraan yang dapat disesuaikan per unit** (isi URL gambar sendiri saat tambah/edit kendaraan, dengan fallback ke foto generic per tipe jika belum diisi), serta **riwayat pemakaian** yang menampilkan jarak tempuh dan BBM terpakai per trip.
+- **Manajemen Driver** — CRUD lengkap, pencarian, peringatan otomatis jika masa berlaku SIM sudah/akan habis dalam 30 hari, serta **riwayat pemakaian per driver** (daftar booking yang pernah menggunakan driver tersebut, lengkap kendaraan dan status).
 - **Pemesanan Kendaraan**
   - Admin membuat pemesanan (pilih kendaraan, driver, dan 2 approver).
   - **Input nama driver bebas diketik** — jika nama belum terdaftar, sistem otomatis membuat data driver baru; jika sudah ada, otomatis tersambung ke data yang sama (dengan bantuan `<datalist>` sebagai saran).
-  - **Validasi bentrok jadwal** — sistem menolak pemesanan baru jika kendaraan yang sama sudah dipesan (dengan status aktif) pada rentang waktu yang tumpang tindih, lengkap dengan pesan yang menyebutkan kode booking penyebab bentrok.
+  - **Validasi bentrok jadwal** — sistem menolak pemesanan baru/pengeditan jika kendaraan yang sama sudah dipesan (dengan status aktif) pada rentang waktu yang tumpang tindih, lengkap dengan pesan yang menyebutkan kode booking penyebab bentrok.
   - **Edit & Hapus pemesanan** — hanya dapat dilakukan selama status masih *"Menunggu Persetujuan L1"* (belum ada approver yang bertindak). Setelah disetujui/ditolak salah satu approver, data terkunci demi menjaga integritas alur persetujuan.
+  - **Tandai Selesai + Log BBM & Odometer** — setelah pemesanan disetujui penuh (Level 1 & 2) dan kendaraan dikembalikan, admin menandainya sebagai *Selesai* sekaligus mencatat odometer awal/akhir dan liter BBM terisi (beserta catatan opsional). Odometer awal terisi otomatis dari catatan pemakaian terakhir kendaraan tersebut. Kendaraan otomatis kembali tersedia untuk pemesanan baru.
+  - **Detail pemesanan lengkap** — modal detail menampilkan data kendaraan, driver, pemohon, riwayat approval, alasan penolakan (jika ada), serta odometer/BBM/catatan hasil "Tandai Selesai".
   - Pencarian, filter status, sorting, dan pagination pada daftar pemesanan.
-  - Alasan penolakan (jika ada) dapat dilihat admin melalui detail pemesanan.
+- **Kalender Pemakaian Kendaraan** — halaman visual bertipe Gantt chart mingguan yang menampilkan jadwal pemakaian seluruh kendaraan sekaligus (satu baris per kendaraan, bar warna sesuai status: menunggu L1/L2, disetujui, selesai), lengkap navigasi minggu sebelumnya/berikutnya dan tombol kembali ke hari ini — memudahkan melihat sekilas kendaraan mana yang kosong pada tanggal tertentu.
 - **Persetujuan Berjenjang (2 Level)** — approver Level 1 menyetujui/menolak terlebih dahulu, baru approver Level 2 bisa bertindak.
 - **Dashboard** — ringkasan total kendaraan, total pemesanan, tren 7 hari terakhir, distribusi kepemilikan armada, ketersediaan armada, dan pengingat jadwal service.
-- **Export Laporan Excel** — laporan pemesanan periodik (bisa difilter rentang tanggal) diunduh dalam format `.xlsx`.
-- **Log Aktivitas** — setiap aksi penting (login, buat/ubah/hapus kendaraan & driver, buat/ubah/hapus/approve/reject pemesanan) tercatat di tabel `activity_logs`.
+- **Export Laporan Excel** — laporan pemesanan periodik (bisa difilter rentang tanggal) diunduh dalam format `.xlsx`, termasuk kolom odometer awal/akhir, jarak tempuh, BBM terisi, dan catatan selesai untuk pemesanan yang sudah rampung.
+- **Log Aktivitas** — setiap aksi penting (login, buat/ubah/hapus kendaraan & driver, buat/ubah/hapus/selesaikan/approve/reject pemesanan) tercatat di tabel `activity_logs`.
 
 ---
 
@@ -73,7 +75,7 @@ vehicle-booking-system/
 ├── vehicle-booking/            # Backend — CodeIgniter 4
 │   ├── app/
 │   │   ├── Controllers/        # Auth, Users, Vehicles, Drivers, Bookings, Approvals, Reports
-│   │   ├── Models/              # UsersModel, VehiclesModel, DriversModel, dll.
+│   │   ├── Models/              # UsersModel, VehiclesModel, DriversModel, FuelLogsModel, dll.
 │   │   ├── Database/Migrations/
 │   │   ├── Filters/             # CorsFilter
 │   │   └── Config/Routes.php
@@ -89,6 +91,7 @@ vehicle-booking-system/
             ├── vehicles/
             ├── drivers/
             ├── bookings/
+            ├── calendar/
             └── approvals/
 ```
 
@@ -194,6 +197,15 @@ Sistem punya 2 peran: **Admin** (membuat pemesanan) dan **Approver** (menyetujui
    Pemesanan baru muncul di daftarnya SETELAH Level 1 menyetujui → klik "Setujui" atau "Tolak"
    → jika disetujui, status akhir: DISETUJUI (approved_l2)
    → jika ditolak, status: DITOLAK
+
+4. Setelah kendaraan selesai digunakan dan dikembalikan, admin membuka menu "..."
+   pada pemesanan berstatus DISETUJUI dan memilih "Tandai Selesai"
+   → muncul form kecil untuk mencatat odometer awal (terisi otomatis dari
+     pemakaian terakhir kendaraan), odometer akhir, liter BBM terisi, dan catatan
+   → status berubah: SELESAI (completed)
+   → kendaraan otomatis kembali tersedia untuk pemesanan baru
+   → data jarak tempuh, BBM, dan catatan tercatat dan dapat dilihat di detail
+     pemesanan, riwayat pemakaian kendaraan, maupun riwayat pemakaian driver
 ```
 
 ### Peta Halaman
@@ -201,9 +213,10 @@ Sistem punya 2 peran: **Admin** (membuat pemesanan) dan **Approver** (menyetujui
 | Halaman | Fungsi | Akses |
 |---|---|---|
 | **Dashboard** | Ringkasan statistik & grafik operasional | Semua role |
-| **Kendaraan** | Daftar kendaraan, detail, riwayat pemakaian | Lihat: semua role. Tambah/Edit/Hapus: **Admin** |
-| **Driver** | Daftar driver, peringatan masa berlaku SIM | Lihat: semua role. Tambah/Edit/Hapus: **Admin** |
-| **Pemesanan** | Riwayat semua pemesanan, edit/hapus (jika masih pending), export Excel | Lihat: semua role. Buat/Edit/Hapus: **Admin** |
+| **Kendaraan** | Daftar kendaraan, detail, foto per unit, riwayat pemakaian (jarak tempuh & BBM) | Lihat: semua role. Tambah/Edit/Hapus: **Admin** |
+| **Driver** | Daftar driver, riwayat pemakaian, peringatan masa berlaku SIM | Lihat: semua role. Tambah/Edit/Hapus: **Admin** |
+| **Pemesanan** | Riwayat semua pemesanan, edit/hapus/tandai selesai, export Excel | Lihat: semua role. Kelola: **Admin** |
+| **Kalender** | Visual jadwal pemakaian seluruh kendaraan per minggu (Gantt chart) | Semua role |
 | **Approval** | Daftar pemesanan yang perlu disetujui user yang login | Hanya tampil untuk role **Approver** |
 
 ### Contoh Uji Coba Alur Lengkap
@@ -213,11 +226,18 @@ Sistem punya 2 peran: **Admin** (membuat pemesanan) dan **Approver** (menyetujui
 3. Coba buat pemesanan lain dengan kendaraan & rentang tanggal yang sama — sistem akan menolak dengan pesan bentrok jadwal.
 4. Logout → login `spv_tambang1` → buka **Approval** → klik **Setujui** pada pemesanan tadi.
 5. Logout → login `manager_hq` → buka **Approval** → pemesanan kini muncul di daftarnya → klik **Setujui**.
-6. Login kembali sebagai `admin` → cek **Pemesanan**, status sudah berubah menjadi **Disetujui**, dan tombol Edit/Hapus sudah tidak tersedia lagi untuk data ini.
+6. Login kembali sebagai `admin` → cek **Pemesanan**, status sudah berubah menjadi **Disetujui**. Buka menu "..." → klik **Tandai Selesai**, isi odometer akhir, liter BBM, dan catatan.
+7. Buka halaman **Kendaraan**, klik **Status Kendaraan** pada kendaraan yang baru dipakai — jarak tempuh dan BBM yang dicatat akan tampil di riwayatnya.
+8. Buka halaman **Driver**, klik **Riwayat** pada driver yang tadi dipakai — pemesanan yang baru saja diselesaikan akan tampil di riwayatnya.
+9. Buka halaman **Kalender**, lihat bar pemesanan tadi muncul pada baris kendaraan yang bersangkutan sesuai rentang tanggalnya.
+
+### Menambahkan Foto Kendaraan
+
+Di halaman **Kendaraan**, saat menambah atau mengedit data, isi field **URL Foto Kendaraan** dengan link gambar yang sudah ter-hosting online (misalnya dari Unsplash atau Pinterest — klik kanan gambar → *Copy image address*, pastikan link mengarah langsung ke file gambar, bukan ke halaman web). Jika dikosongkan, sistem akan menampilkan foto generic berdasarkan tipe kendaraan (angkutan orang/barang) sebagai fallback. Foto ini akan otomatis ikut tampil di kartu kendaraan maupun tabel dan detail pemesanan.
 
 ### Export Laporan
 
-Di halaman **Pemesanan**, isi rentang tanggal (opsional) lalu klik **Export Excel** untuk mengunduh laporan periodik dalam format `.xlsx`.
+Di halaman **Pemesanan**, isi rentang tanggal (opsional) lalu klik **Export Excel** untuk mengunduh laporan periodik dalam format `.xlsx`, lengkap dengan kolom odometer, jarak tempuh, BBM, dan catatan selesai untuk pemesanan yang berstatus Selesai.
 
 ---
 
@@ -228,10 +248,11 @@ Tabel utama:
 | Tabel | Keterangan |
 |---|---|
 | `users` | Data admin & approver (kolom `role`, `level` untuk approver) |
-| `vehicles` | Data kendaraan (`type`: angkutan_orang/angkutan_barang, `ownership`: milik_perusahaan/sewa) |
+| `vehicles` | Data kendaraan (`type`: angkutan_orang/angkutan_barang, `ownership`: milik_perusahaan/sewa, `image_url`: URL foto kendaraan, opsional) |
 | `drivers` | Data driver/pengemudi, termasuk `license_expiry` untuk masa berlaku SIM (dapat ditambahkan otomatis saat membuat pemesanan) |
-| `vehicle_bookings` | Data pemesanan kendaraan |
+| `vehicle_bookings` | Data pemesanan kendaraan (`status`: pending / approved_l1 / approved_l2 / completed / rejected) |
 | `booking_approvals` | Baris persetujuan per level per pemesanan (status, notes, approved_at) |
+| `fuel_logs` | Catatan odometer awal/akhir, BBM terisi, dan catatan per pemesanan yang telah selesai |
 | `vehicle_service_schedule` | Jadwal service kendaraan |
 | `activity_logs` | Log aktivitas sistem |
 
@@ -249,22 +270,24 @@ Base URL: `http://localhost:8080/api`
 | POST | `/logout` | Logout user |
 | GET | `/users?role=approver` | Daftar user approver |
 | GET | `/vehicles` | Daftar kendaraan |
-| POST | `/vehicles` | Tambah kendaraan |
-| PUT | `/vehicles/{id}` | Update kendaraan |
+| POST | `/vehicles` | Tambah kendaraan (dapat menyertakan `image_url`) |
+| PUT | `/vehicles/{id}` | Update kendaraan (dapat menyertakan `image_url`) |
 | DELETE | `/vehicles/{id}` | Hapus kendaraan |
+| GET | `/vehicles/{id}/last-odometer` | Odometer akhir terakhir dari kendaraan (untuk default odometer awal pemakaian berikutnya) |
 | GET | `/drivers` | Daftar driver |
 | POST | `/drivers` | Tambah driver (juga dipanggil otomatis saat nama driver baru diketik di form pemesanan) |
 | PUT | `/drivers/{id}` | Update driver |
 | DELETE | `/drivers/{id}` | Hapus driver |
-| GET | `/bookings` | Daftar pemesanan (termasuk `rejection_reason` jika status ditolak) |
-| GET | `/bookings/{id}` | Detail pemesanan beserta riwayat approval |
+| GET | `/bookings` | Daftar pemesanan (termasuk `rejection_reason`, `fuel_log`, dan `vehicle_image_url` jika tersedia) |
+| GET | `/bookings/{id}` | Detail pemesanan lengkap (kendaraan, driver, pemohon, riwayat approval, `fuel_log`, `rejection_reason`) |
 | POST | `/bookings` | Buat pemesanan baru — memvalidasi rentang tanggal & bentrok jadwal (respons `409` jika bentrok) |
 | PUT | `/bookings/{id}` | Update pemesanan — **hanya jika status masih pending**, tetap divalidasi bentrok jadwal |
 | DELETE | `/bookings/{id}` | Hapus pemesanan — **hanya jika status masih pending** |
+| POST | `/bookings/{id}/complete` | Menandai pemesanan selesai — **hanya jika status sudah approved_l2**. Body opsional: `odometer_start`, `odometer_end`, `fuel_liters`, `notes` |
 | GET | `/approvals?approver_id={id}` | Seluruh riwayat approval milik seorang approver (pending/approved/rejected) |
 | POST | `/approvals/{id}/approve` | Menyetujui pemesanan |
 | POST | `/approvals/{id}/reject` | Menolak pemesanan (menyertakan `notes` alasan) |
-| GET | `/reports/bookings/export` | Export laporan pemesanan ke Excel (parameter opsional `start` & `end`) |
+| GET | `/reports/bookings/export` | Export laporan pemesanan ke Excel (parameter opsional `start` & `end`), termasuk kolom odometer, jarak tempuh, BBM, dan catatan selesai |
 
 ---
 
@@ -274,11 +297,13 @@ Fitur yang direncanakan untuk pengembangan selanjutnya:
 
 - [x] Validasi bentrok jadwal pemesanan (double booking)
 - [x] Manajemen Driver (CRUD + peringatan masa berlaku SIM)
-- [ ] Log BBM & odometer per pemakaian kendaraan
+- [x] Status "Selesai" untuk menandai kendaraan telah dikembalikan
+- [x] Riwayat pemakaian per driver
+- [x] Log BBM & odometer per pemakaian kendaraan
+- [x] Foto kendaraan custom per unit (bukan hanya generic per tipe)
+- [x] Kalender visual pemakaian kendaraan (Gantt chart mingguan)
 - [ ] Riwayat service kendaraan (bukan hanya jadwal berikutnya)
-- [ ] Kalender visual pemakaian kendaraan
 - [ ] Halaman kelola User/Approver dari UI
-- [ ] Status "Selesai" untuk menandai kendaraan telah dikembalikan
 - [ ] Ganti password mandiri untuk setiap user
 - [ ] Riwayat aktivitas (activity log) yang dapat dilihat di UI
 - [ ] Notifikasi in-app
@@ -288,8 +313,23 @@ Fitur yang direncanakan untuk pengembangan selanjutnya:
 
 ## 🩹 Troubleshooting Umum
 
-**CORS error di browser**
-Pastikan `php spark serve` aktif dan filter `cors` di `app/Config/Filters.php` sudah terpasang di grup route `api`. Untuk endpoint export Excel yang menggunakan `header()` PHP native, header `Access-Control-Allow-Origin` perlu ditambahkan manual di controller `Reports.php`.
+**CORS error di banyak halaman sekaligus**
+Sering kali bukan masalah konfigurasi CORS itu sendiri, melainkan *fatal error* di sisi PHP yang membuat response gagal terkirim sebelum sempat melewati filter CORS. Periksa `writable/logs/log-<tanggal>.log` untuk pesan error sebenarnya sebelum mengubah konfigurasi CORS.
+
+**`Namespace declaration statement has to be the very first statement`**
+Terjadi ketika ada teks tidak sengaja tertinggal di atas baris `<?php`/`namespace` pada file PHP (controller maupun migration) — biasanya sisa perintah terminal yang ikut ter-paste saat menimpa file lewat PowerShell heredoc. Perbaiki dengan menimpa ulang file secara utuh dan pastikan baris pertama persis `<?php`.
+
+**`Table 'namadb.nama_tabel' doesn't exist`**
+Migration untuk tabel tersebut belum dijalankan atau gagal karena error sintaks (lihat poin di atas). Jalankan ulang `php spark migrate` setelah memastikan file migration bersih.
+
+**`Class "App\Models\NamaModel" not found`**
+File model belum dibuat, namanya tidak sama persis dengan class-nya, atau berada di folder yang salah. CodeIgniter 4 memakai autoload PSR-4 — nama file **harus** sama persis dengan nama class (mis. `FuelLogsModel.php` berisi `class FuelLogsModel extends Model`) dan berada di `app/Models/`.
+
+**Endpoint mengembalikan data tidak lengkap (field kosong/`null`) padahal tabel lain punya datanya**
+Periksa apakah method controller terkait melakukan `JOIN` ke tabel relasi (`vehicles`, `drivers`, `users`, `fuel_logs`, dsb) menggunakan query builder, atau hanya memanggil `$model->find($id)` yang cuma mengambil baris mentah dari satu tabel. Method `index()` dan `show()` pada controller yang sama seringkali perlu pola query yang identik agar hasilnya konsisten.
+
+**Data berhasil dikirim dari frontend tapi tidak tersimpan di database (tanpa error)**
+Periksa properti `$allowedFields` pada Model terkait. CodeIgniter secara diam-diam akan membuang kolom yang tidak terdaftar di `$allowedFields` saat `insert()`/`update()` dipanggil — tidak ada error yang muncul, datanya hanya tidak masuk.
 
 **Frontend menampilkan "Cannot GET"**
 Biasanya karena SSR mencoba mengakses `localStorage` di sisi server. Pastikan pengecekan `isPlatformBrowser` digunakan sebelum memanggil Web API browser di service Angular (`Auth`).
@@ -297,14 +337,20 @@ Biasanya karena SSR mencoba mengakses `localStorage` di sisi server. Pastikan pe
 **Grafik dashboard kosong**
 Pastikan elemen `<canvas>` sudah ter-render di DOM sebelum Chart.js dipanggil (gunakan `setTimeout` singkat setelah data selesai dimuat).
 
-**`NG8004: No pipe found with name 'slice'`**
-Karena komponen bertipe *standalone*, pipe bawaan Angular seperti `SlicePipe` harus diimpor eksplisit dan didaftarkan di array `imports` komponen terkait.
+**`NG8004: No pipe found with name 'slice'` / `'date'` / pipe bawaan lainnya**
+Karena komponen bertipe *standalone*, pipe bawaan Angular seperti `SlicePipe` atau `DatePipe` harus diimpor eksplisit dari `@angular/common` dan didaftarkan di array `imports` komponen terkait — tidak otomatis tersedia seperti pada NgModule biasa.
 
 **Dropdown menu "..." pada baris/kartu terakhir terpotong**
 Pastikan `overflow: hidden` tidak diterapkan langsung pada container yang membungkus dropdown; gunakan `border-radius` pada elemen anak (mis. baris pertama/terakhir tabel) alih-alih pada container luar. Jika baris berada di posisi paling bawah, arahkan dropdown terbuka ke atas (`bottom` bukan `top`) agar tidak keluar dari area yang terlihat.
 
 **Booking gagal disimpan dengan pesan bentrok jadwal**
-Ini bukan bug — validasi memang menolak pemesanan kendaraan yang sama pada rentang waktu yang tumpang tindih dengan pemesanan aktif lain. Pilih kendaraan lain atau ubah rentang tanggal.
+Ini bukan bug — validasi memang menolak pemesanan kendaraan yang sama pada rentang waktu yang tumpang tindih dengan pemesanan aktif lain. Pilih kendaraan lain, ubah rentang tanggal, atau selesaikan (Tandai Selesai) pemesanan lama terlebih dahulu jika kendaraan sudah tidak terpakai.
+
+**"Tandai Selesai" gagal dengan pesan "Hanya pemesanan yang sudah disetujui penuh..."**
+Booking yang bersangkutan belum berstatus `approved_l2` (belum disetujui kedua level approver). Cek status booking terlebih dahulu di tabel Pemesanan sebelum mencoba menandainya selesai.
+
+**URL foto kendaraan tidak muncul / broken image**
+Pastikan URL yang diisi mengarah **langsung ke file gambar**, bukan ke halaman web. Untuk Pinterest, gunakan *Copy image address* pada gambar yang sudah diperbesar (biasanya berformat `https://i.pinimg.com/...`), bukan link pin (`pinterest.com/pin/...`). Tes dengan membuka URL tersebut di tab baru — jika yang muncul hanya gambar (bukan tampilan situs penuh), URL tersebut valid digunakan.
 
 **Server backend mati sendiri**
 `php spark serve` berjalan di foreground — jangan tutup terminal tempat command ini dijalankan, dan jangan pakai terminal yang sama untuk command lain.

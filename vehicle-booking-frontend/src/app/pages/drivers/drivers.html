@@ -55,15 +55,16 @@
             <div class="license-alert alert-amber">SIM akan habis {{ licenseDaysLeft(d.license_expiry) }} hari lagi</div>
           }
 
-          @if (auth.isAdmin()) {
+          @if (deletingId() === d.id) {
+            <div class="confirm-row">
+              <span class="confirm-text">Yakin hapus?</span>
+              <button class="btn-mini btn-danger" (click)="doDelete(d.id)">Ya</button>
+              <button class="btn-mini btn-ghost" (click)="cancelDelete()">Batal</button>
+            </div>
+          } @else {
             <div class="drv-actions">
-              @if (deletingId() === d.id) {
-                <div class="confirm-row">
-                  <span class="confirm-text">Yakin hapus?</span>
-                  <button class="btn-mini btn-danger" (click)="doDelete(d.id)">Ya</button>
-                  <button class="btn-mini btn-ghost" (click)="cancelDelete()">Batal</button>
-                </div>
-              } @else {
+              <button class="btn-outline" (click)="openHistory(d)">Riwayat</button>
+              @if (auth.isAdmin()) {
                 <button class="btn-outline" (click)="openEditForm(d)">Edit</button>
                 <button class="btn-danger-outline" (click)="confirmDelete(d.id)">Hapus</button>
               }
@@ -122,6 +123,33 @@
             {{ submitting() ? 'Menyimpan...' : 'Simpan' }}
           </button>
           <button class="btn-ghost-lg" (click)="cancelForm()">Batal</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (historyDriver()) {
+    <div class="modal-overlay" (click)="closeHistory()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">Riwayat Pemakaian — {{ historyDriver().name }}</h3>
+
+        <div class="history-list">
+          @for (b of driverBookingHistory(historyDriver().id); track b.id) {
+            <div class="history-row">
+              <div class="history-main">
+                <span class="history-code">{{ b.booking_code }}</span>
+                <span class="history-sub">{{ b.vehicle_name }} ({{ b.license_plate }})</span>
+                <span class="history-date">{{ b.start_date }} s/d {{ b.end_date }}</span>
+              </div>
+              <span class="badge" [class]="bookingStatusClass(b.status)">{{ bookingStatusLabel(b.status) }}</span>
+            </div>
+          } @empty {
+            <p class="empty-note">Belum ada riwayat pemakaian untuk driver ini</p>
+          }
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-ghost-lg" (click)="closeHistory()">Tutup</button>
         </div>
       </div>
     </div>

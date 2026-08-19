@@ -51,6 +51,7 @@ export class Bookings implements OnInit {
   openMenuId = signal<number | null>(null);
   copiedId = signal<number | null>(null);
   detailBooking = signal<any | null>(null);
+  completing = signal<number | null>(null);
 
   get approversLevel1() {
     return this.approvers().filter(a => String(a.level) === '1');
@@ -265,6 +266,21 @@ export class Bookings implements OnInit {
     });
   }
 
+  markComplete(id: number) {
+    this.completing.set(id);
+    this.api.completeBooking(id).subscribe({
+      next: () => {
+        this.completing.set(null);
+        this.closeMenu();
+        this.closeDetail();
+        this.loadBookings();
+      },
+      error: () => {
+        this.completing.set(null);
+      },
+    });
+  }
+
   exportToExcel() {
     this.exportError.set('');
     this.exporting.set(true);
@@ -291,8 +307,8 @@ export class Bookings implements OnInit {
       pending: 'Menunggu L1',
       approved_l1: 'Menunggu L2',
       approved_l2: 'Disetujui',
-      rejected: 'Ditolak',
       completed: 'Selesai',
+      rejected: 'Ditolak',
     };
     return map[status] ?? status;
   }
@@ -302,8 +318,8 @@ export class Bookings implements OnInit {
       pending: 'badge-amber',
       approved_l1: 'badge-blue',
       approved_l2: 'badge-green',
+      completed: 'badge-gray',
       rejected: 'badge-red',
-      completed: 'badge-green',
     };
     return map[status] ?? '';
   }

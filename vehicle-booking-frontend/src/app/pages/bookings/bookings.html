@@ -103,6 +103,7 @@
                 <option value="pending">Menunggu L1</option>
                 <option value="approved_l1">Menunggu L2</option>
                 <option value="approved_l2">Disetujui</option>
+                <option value="completed">Selesai</option>
                 <option value="rejected">Ditolak</option>
               </select>
               <button class="btn-clear-filter" (click)="clearFilters()">Reset Filter</button>
@@ -185,6 +186,11 @@
                     @if (openMenuId() === b.id) {
                       <div class="menu-dropdown">
                         <button (click)="openDetail(b)">Lihat Detail</button>
+                        @if (b.status === 'approved_l2' && auth.isAdmin()) {
+                          <button class="menu-success" (click)="markComplete(b.id)" [disabled]="completing() === b.id">
+                            {{ completing() === b.id ? 'Memproses...' : 'Tandai Selesai' }}
+                          </button>
+                        }
                       </div>
                     }
                   </div>
@@ -328,6 +334,11 @@
         </div>
 
         <div class="modal-actions">
+          @if (detailBooking().status === 'approved_l2' && auth.isAdmin()) {
+            <button class="btn-success" (click)="markComplete(detailBooking().id)" [disabled]="completing() === detailBooking().id">
+              {{ completing() === detailBooking().id ? 'Memproses...' : 'Tandai Selesai' }}
+            </button>
+          }
           <button class="btn-ghost-lg" (click)="closeDetail()">Tutup</button>
         </div>
       </div>

@@ -19,6 +19,7 @@ $routes->group("api", ["filter" => "cors"], function ($routes) {
     $routes->post("bookings", "Bookings::create");
     $routes->put("bookings/(:num)", "Bookings::update/$1");
     $routes->delete("bookings/(:num)", "Bookings::delete/$1");
+    $routes->post("bookings/(:num)/complete", "Bookings::complete/$1");
     $routes->get("approvals", "Approvals::index");
     $routes->post("approvals/(:num)/approve", "Approvals::approve/$1");
     $routes->post("approvals/(:num)/reject", "Approvals::reject/$1");

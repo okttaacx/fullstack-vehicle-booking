@@ -15,6 +15,7 @@ export class Drivers implements OnInit {
   auth = inject(Auth);
 
   drivers = signal<any[]>([]);
+  bookings = signal<any[]>([]);
   loading = signal(true);
   errorMsg = signal('');
 
@@ -32,6 +33,7 @@ export class Drivers implements OnInit {
   status = 'active';
 
   deletingId = signal<number | null>(null);
+  historyDriver = signal<any | null>(null);
 
   filteredDrivers = computed(() => {
     const term = this.searchTerm.trim().toLowerCase();
@@ -44,6 +46,7 @@ export class Drivers implements OnInit {
 
   ngOnInit() {
     this.loadDrivers();
+    this.api.getBookings().subscribe({ next: (res) => this.bookings.set(res.data ?? []) });
   }
 
   loadDrivers() {
@@ -148,8 +151,44 @@ export class Drivers implements OnInit {
     });
   }
 
+  openHistory(d: any) {
+    this.historyDriver.set(d);
+  }
+
+  closeHistory() {
+    this.historyDriver.set(null);
+  }
+
+  driverBookingHistory(driverId: number) {
+    return this.bookings()
+      .filter((b: any) => Number(b.driver_id) === Number(driverId))
+      .sort((a: any, b: any) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
+  }
+
   statusLabel(status: string): string {
     return status === 'active' ? 'Aktif' : 'Nonaktif';
+  }
+
+  bookingStatusLabel(status: string): string {
+    const map: Record<string, string> = {
+      pending: 'Menunggu L1',
+      approved_l1: 'Menunggu L2',
+      approved_l2: 'Disetujui',
+      completed: 'Selesai',
+      rejected: 'Ditolak',
+    };
+    return map[status] ?? status;
+  }
+
+  bookingStatusClass(status: string): string {
+    const map: Record<string, string> = {
+      pending: 'badge-amber',
+      approved_l1: 'badge-blue',
+      approved_l2: 'badge-green',
+      completed: 'badge-gray',
+      rejected: 'badge-red',
+    };
+    return map[status] ?? '';
   }
 
   licenseWarning(expiry: string | null): 'expired' | 'soon' | 'ok' | null {

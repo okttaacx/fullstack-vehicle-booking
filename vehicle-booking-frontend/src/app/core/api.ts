@@ -64,6 +64,10 @@ export class Api {
     return this.http.delete<any>(`${this.base}/bookings/${id}`);
   }
 
+  completeBooking(id: number) {
+    return this.http.post<any>(`${this.base}/bookings/${id}/complete`, {});
+  }
+
   getApprovals(approverId: number) {
     return this.http.get<any>(`${this.base}/approvals?approver_id=${approverId}`);
   }

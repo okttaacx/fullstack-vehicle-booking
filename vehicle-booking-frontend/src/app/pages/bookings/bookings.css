@@ -683,6 +683,44 @@
   cursor: pointer;
 }
 
+/* Tombol "Tandai Selesai" di dropdown menu tabel */
+.menu-success {
+  color: #16a34a !important;
+}
+
+.menu-dropdown button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Badge status "Selesai" */
+.badge-gray {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* Tombol "Tandai Selesai" di modal detail */
+.btn-success {
+  padding: 11px 20px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  font-family: 'Baloo 2', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.btn-success:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 @media (max-width: 700px) {
   .form-grid { grid-template-columns: 1fr; }
   .book-table { display: block; overflow-x: auto; }

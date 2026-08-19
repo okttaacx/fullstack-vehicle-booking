@@ -220,4 +220,27 @@ class Bookings extends ResourceController
             "message" => "Pemesanan berhasil dihapus",
         ]);
     }
+
+    public function complete($id = null)
+    {
+        $bookingModel = new VehicleBookingsModel();
+        $booking = $bookingModel->find($id);
+
+        if (! $booking) {
+            return $this->failNotFound("Booking tidak ditemukan");
+        }
+
+        if ($booking["status"] !== "approved_l2") {
+            return $this->fail("Hanya pemesanan yang sudah disetujui penuh yang dapat ditandai selesai", 400);
+        }
+
+        $bookingModel->update($id, ["status" => "completed"]);
+
+        ActivityLogger::log(null, "complete_booking", "Menandai pemesanan selesai: " . $booking["booking_code"]);
+
+        return $this->respond([
+            "status"  => 200,
+            "message" => "Pemesanan ditandai selesai",
+        ]);
+    }
 }

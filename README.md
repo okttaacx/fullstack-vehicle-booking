@@ -278,7 +278,7 @@ Fitur yang direncanakan untuk pengembangan selanjutnya:
 - [ ] Riwayat service kendaraan (bukan hanya jadwal berikutnya)
 - [ ] Kalender visual pemakaian kendaraan
 - [ ] Halaman kelola User/Approver dari UI
-- [ ] Status "Selesai" untuk menandai kendaraan telah dikembalikan
+- [x] Status "Selesai" untuk menandai kendaraan telah dikembalikan
 - [ ] Ganti password mandiri untuk setiap user
 - [ ] Riwayat aktivitas (activity log) yang dapat dilihat di UI
 - [ ] Notifikasi in-app

@@ -721,6 +721,43 @@
   cursor: not-allowed;
 }
 
+.modal-desc {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: -12px 0 18px 0;
+}
+
+.distance-note {
+  font-size: 13px;
+  font-weight: 600;
+  color: #16a34a;
+  background: #f0fdf4;
+  padding: 8px 12px;
+  border-radius: 10px;
+  margin-top: 12px;
+}
+
+.notes-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notes-box strong {
+  font-size: 11px;
+  color: #15803d;
+  text-transform: uppercase;
+}
+
+.notes-box span {
+  font-size: 13px;
+  color: #166534;
+}
+
 @media (max-width: 700px) {
   .form-grid { grid-template-columns: 1fr; }
   .book-table { display: block; overflow-x: auto; }

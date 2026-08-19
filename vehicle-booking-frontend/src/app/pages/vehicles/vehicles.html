@@ -1,5 +1,5 @@
 <div class="veh" (click)="closeMenu()">
-  <div class="veh-header">
+  <header class="veh-header">
     <div>
       <h1 class="veh-title">Daftar Kendaraan</h1>
       <p class="veh-sub">Kelola dan pantau kendaraan perusahaan secara real-time</p>
@@ -45,110 +45,140 @@
         </button>
       }
     </div>
-  </div>
+  </header>
 
   @if (loading()) {
-    <p>Memuat data...</p>
+    <p class="loading-text">Memuat data...</p>
   } @else if (errorMsg()) {
     <p class="error-text">{{ errorMsg() }}</p>
   } @else {
-    <div class="summary-card">
-      <div class="summary-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-          <path d="M3 13l2-6a2 2 0 0 1 2-1.4h10A2 2 0 0 1 19 7l2 6"></path>
-          <path d="M2 13h20v4a1 1 0 0 1-1 1h-1.5a1.5 1.5 0 0 1-3 0h-9a1.5 1.5 0 0 1-3 0H3a1 1 0 0 1-1-1v-4z"></path>
-          <circle cx="7" cy="17.5" r="1.5"></circle>
-          <circle cx="17" cy="17.5" r="1.5"></circle>
-        </svg>
+
+    <!-- Stat cards -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon stat-icon--green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M3 13l2-6a2 2 0 0 1 2-1.4h10A2 2 0 0 1 19 7l2 6"></path><path d="M2 13h20v4a1 1 0 0 1-1 1h-1.5a1.5 1.5 0 0 1-3 0h-9a1.5 1.5 0 0 1-3 0H3a1 1 0 0 1-1-1v-4z"></path><circle cx="7" cy="17.5" r="1.5"></circle><circle cx="17" cy="17.5" r="1.5"></circle></svg>
+        </div>
+        <div class="stat-body">
+          <span class="stat-label">Total Kendaraan</span>
+          <strong class="stat-value">{{ vehicles().length }} <small>Unit</small></strong>
+        </div>
       </div>
-      <div class="summary-text">
-        <span class="summary-label">Total Kendaraan</span>
-        <span class="summary-value">{{ vehicles().length }} <small>Unit</small></span>
+
+      <div class="stat-card">
+        <div class="stat-icon stat-icon--blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+        </div>
+        <div class="stat-body">
+          <span class="stat-label">Hasil Pencarian</span>
+          <strong class="stat-value">{{ filteredVehicles().length }} <small>Unit</small></strong>
+        </div>
       </div>
-    </div>
 
-    <div class="veh-grid">
-      @for (v of filteredVehicles(); track v.id) {
-        <div class="veh-card">
-          <div class="card-photo">
-            <span class="badge" [class.badge-blue]="v.ownership === 'milik_perusahaan'" [class.badge-purple]="v.ownership === 'sewa'">
-              {{ ownershipLabel(v.ownership) }}
-            </span>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon--purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M3 21V8l9-5 9 5v13"></path><path d="M9 21v-6h6v6"></path></svg>
+        </div>
+        <div class="stat-body">
+          <span class="stat-label">Milik Perusahaan</span>
+          <strong class="stat-value">{{ ownedCount() }} <small>Unit</small></strong>
+        </div>
+      </div>
 
-            @if (auth.isAdmin()) {
-              <div class="menu-wrap" (click)="$event.stopPropagation()">
-                <button class="btn-menu" (click)="toggleMenu(v.id)">
-                  <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg>
-                </button>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon--amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3-3.5 3.5z"></path></svg>
+        </div>
+        <div class="stat-body">
+          <span class="stat-label">Sewa</span>
+          <strong class="stat-value">{{ rentedCount() }} <small>Unit</small></strong>
+        </div>
+      </div>
+    </section>
 
-                @if (openMenuId() === v.id) {
-                  <div class="menu-dropdown">
-                    <button (click)="openEditForm(v)">Edit</button>
-                    <button class="menu-danger" (click)="confirmDelete(v.id)">Hapus</button>
+    <!-- Table -->
+    <section class="table-card">
+      <div class="table-wrap">
+        <table class="veh-table">
+          <thead>
+            <tr>
+              <th>Kendaraan</th>
+              <th>Tipe</th>
+              <th>Konsumsi BBM</th>
+              <th>Jadwal Service</th>
+              <th>Kepemilikan</th>
+              <th class="col-aksi">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (v of filteredVehicles(); track v.id) {
+              <tr>
+                <td>
+                  <div class="veh-cell">
+                    <img class="veh-thumb" [src]="vehicleImage(v)" [alt]="v.name">
+                    <div class="veh-cell-text">
+                      <span class="veh-cell-name">{{ v.name }}</span>
+                      <span class="veh-cell-plate">
+                        {{ v.license_plate }}
+                        <button class="btn-copy" (click)="copyPlate(v)" title="Salin plat nomor">
+                          @if (copiedId() === v.id) {
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M20 6L9 17l-5-5"></path></svg>
+                          } @else {
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                          }
+                        </button>
+                      </span>
+                    </div>
                   </div>
-                }
-              </div>
+                </td>
+                <td>{{ typeLabel(v.type) }}</td>
+                <td>{{ v.fuel_consumption }} km/l</td>
+                <td>{{ v.service_schedule || '-' }}</td>
+                <td>
+                  <span class="badge" [class.badge-blue]="v.ownership === 'milik_perusahaan'" [class.badge-purple]="v.ownership === 'sewa'">
+                    {{ ownershipLabel(v.ownership) }}
+                  </span>
+                </td>
+                <td class="col-aksi">
+                  @if (deletingId() === v.id) {
+                    <div class="confirm-inline" (click)="$event.stopPropagation()">
+                      <span>Hapus?</span>
+                      <button class="btn-mini btn-danger" (click)="doDelete(v.id)">Ya</button>
+                      <button class="btn-mini btn-ghost" (click)="cancelDelete()">Batal</button>
+                    </div>
+                  } @else {
+                    <div class="menu-wrap" (click)="$event.stopPropagation()">
+                      <button class="btn-menu" (click)="toggleMenu(v.id)">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg>
+                      </button>
+
+                      @if (openMenuId() === v.id) {
+                        <div class="menu-dropdown">
+                          <button (click)="openDetail(v)">Lihat Detail</button>
+                          <button (click)="openStatus(v)">Status Kendaraan</button>
+                          @if (auth.isAdmin()) {
+                            <button (click)="openEditForm(v)">Edit</button>
+                            <button class="menu-danger" (click)="confirmDelete(v.id)">Hapus</button>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="empty-row">Tidak ada kendaraan yang cocok dengan pencarian</td>
+              </tr>
             }
+          </tbody>
+        </table>
+      </div>
 
-            <img [src]="vehicleImage(v.type)" [alt]="v.name">
-          </div>
-
-          <div class="card-body">
-            <h3 class="veh-name">{{ v.name }}</h3>
-            <div class="plate-row">
-              <span class="veh-plate">{{ v.license_plate }}</span>
-              <button class="btn-copy" (click)="copyPlate(v)" title="Salin plat nomor">
-                @if (copiedId() === v.id) {
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M20 6L9 17l-5-5"></path></svg>
-                } @else {
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                }
-              </button>
-            </div>
-
-            <div class="veh-meta">
-              <div class="meta-item">
-                <span class="meta-label">Tipe</span>
-                <span class="meta-value">{{ typeLabel(v.type) }}</span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-label">Konsumsi BBM</span>
-                <span class="meta-value">{{ v.fuel_consumption }} km/l</span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-label">Jadwal Service</span>
-                <span class="meta-value">{{ v.service_schedule || '-' }}</span>
-              </div>
-            </div>
-
-            @if (deletingId() === v.id) {
-              <div class="confirm-row">
-                <span class="confirm-text">Yakin hapus kendaraan ini?</span>
-                <div class="confirm-btns">
-                  <button class="btn-mini btn-danger" (click)="doDelete(v.id)">Ya, Hapus</button>
-                  <button class="btn-mini btn-ghost" (click)="cancelDelete()">Batal</button>
-                </div>
-              </div>
-            } @else {
-              <div class="card-actions">
-                <button class="btn-outline-dark" (click)="openDetail(v)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                  Lihat Detail
-                </button>
-                <button class="btn-status" (click)="openStatus(v)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 3v18h18"></path><path d="M18 9l-5 5-3-3-4 4"></path></svg>
-                  Status Kendaraan
-                </button>
-              </div>
-            }
-          </div>
-        </div>
-      } @empty {
-        <div class="empty-state">
-          <p>Tidak ada kendaraan yang cocok dengan pencarian</p>
-        </div>
-      }
-    </div>
+      <div class="table-footer">
+        <span>Menampilkan {{ filteredVehicles().length }} dari {{ vehicles().length }} kendaraan</span>
+      </div>
+    </section>
 
     <div class="tip-banner">
       <div class="tip-icon">
@@ -204,6 +234,11 @@
             <label>Jadwal Service</label>
             <input type="date" [(ngModel)]="serviceSchedule">
           </div>
+
+          <div class="field field--full">
+            <label>URL Foto Kendaraan</label>
+            <input type="text" [(ngModel)]="imageUrl" placeholder="https://... (link foto kendaraan)">
+          </div>
         </div>
 
         @if (formError()) {
@@ -224,7 +259,7 @@
     <div class="modal-overlay" (click)="closeDetail()">
       <div class="modal-card modal-small" (click)="$event.stopPropagation()">
         <h3 class="modal-title">{{ detailVehicle().name }}</h3>
-        <img class="detail-photo" [src]="vehicleImage(detailVehicle().type)" [alt]="detailVehicle().name">
+        <img class="detail-photo" [src]="vehicleImage(detailVehicle())" [alt]="detailVehicle().name">
         <div class="detail-grid">
           <div><strong>Plat Nomor</strong><span>{{ detailVehicle().license_plate }}</span></div>
           <div><strong>Tipe</strong><span>{{ typeLabel(detailVehicle().type) }}</span></div>
@@ -250,6 +285,14 @@
               <div class="history-main">
                 <span class="history-code">{{ b.booking_code }}</span>
                 <span class="history-date">{{ b.start_date | slice:0:10 }} s/d {{ b.end_date | slice:0:10 }}</span>
+                @if (b.fuel_log && b.fuel_log.odometer_start && b.fuel_log.odometer_end) {
+                  <span class="history-fuel">
+                    {{ b.fuel_log.odometer_end - b.fuel_log.odometer_start }} km
+                    @if (b.fuel_log.fuel_liters) {
+                      · {{ b.fuel_log.fuel_liters }} L
+                    }
+                  </span>
+                }
               </div>
               <span class="badge" [class]="statusClass(b.status)">{{ statusLabel(b.status) }}</span>
             </div>

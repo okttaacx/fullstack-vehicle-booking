@@ -7,6 +7,7 @@ $routes->group("api", ["filter" => "cors"], function ($routes) {
     $routes->post("vehicles", "Vehicles::create");
     $routes->put("vehicles/(:num)", "Vehicles::update/$1");
     $routes->delete("vehicles/(:num)", "Vehicles::delete/$1");
+    $routes->get("vehicles/(:num)/last-odometer", "Bookings::lastOdometer/$1");
     $routes->post("login", "Auth::login");
     $routes->post("logout", "Auth::logout");
     $routes->get("users", "Users::index");

@@ -15,10 +15,11 @@ class Reports extends Controller
 
         $db = \Config\Database::connect();
         $builder = $db->table("vehicle_bookings b")
-            ->select("b.booking_code, v.name as vehicle_name, v.license_plate, d.name as driver_name, u.name as requester_name, b.purpose, b.destination, b.start_date, b.end_date, b.status")
+            ->select("b.booking_code, v.name as vehicle_name, v.license_plate, d.name as driver_name, u.name as requester_name, b.purpose, b.destination, b.start_date, b.end_date, b.status, fl.odometer_start, fl.odometer_end, fl.fuel_liters, fl.notes as fuel_notes")
             ->join("vehicles v", "v.id = b.vehicle_id", "left")
             ->join("drivers d", "d.id = b.driver_id", "left")
-            ->join("users u", "u.id = b.requested_by", "left");
+            ->join("users u", "u.id = b.requested_by", "left")
+            ->join("fuel_logs fl", "fl.booking_id = b.id", "left");
 
         if (! empty($start)) {
             $builder->where("b.start_date >=", $start . " 00:00:00");
@@ -44,6 +45,11 @@ class Reports extends Controller
             "H1" => "Tanggal Mulai",
             "I1" => "Tanggal Selesai",
             "J1" => "Status",
+            "K1" => "Odometer Awal (km)",
+            "L1" => "Odometer Akhir (km)",
+            "M1" => "Jarak Tempuh (km)",
+            "N1" => "BBM Terisi (liter)",
+            "O1" => "Catatan Selesai",
         ];
 
         foreach ($headers as $cell => $label) {
@@ -71,10 +77,21 @@ class Reports extends Controller
             $sheet->setCellValue("H{$rowNum}", $row["start_date"]);
             $sheet->setCellValue("I{$rowNum}", $row["end_date"]);
             $sheet->setCellValue("J{$rowNum}", $statusLabel[$row["status"]] ?? $row["status"]);
+
+            $odoStart = $row["odometer_start"] ?? null;
+            $odoEnd   = $row["odometer_end"] ?? null;
+            $distance = ($odoStart !== null && $odoEnd !== null) ? ($odoEnd - $odoStart) : "-";
+
+            $sheet->setCellValue("K{$rowNum}", $odoStart ?? "-");
+            $sheet->setCellValue("L{$rowNum}", $odoEnd ?? "-");
+            $sheet->setCellValue("M{$rowNum}", $distance);
+            $sheet->setCellValue("N{$rowNum}", $row["fuel_liters"] ?? "-");
+            $sheet->setCellValue("O{$rowNum}", $row["fuel_notes"] ?? "-");
+
             $rowNum++;
         }
 
-        foreach (range("A", "J") as $col) {
+        foreach (range("A", "O") as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 

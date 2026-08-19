@@ -1,4 +1,12 @@
-import { Component, OnInit, AfterViewInit, ElementRef, ViewChild, inject, signal } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  AfterViewInit,
+  ElementRef,
+  ViewChild,
+  inject,
+  signal,
+} from '@angular/core';
 import { Chart, registerables } from 'chart.js';
 import { Api } from '../../core/api';
 import { Auth } from '../../core/auth';
@@ -34,14 +42,22 @@ export class Dashboard implements OnInit, AfterViewInit {
   availabilityRate = signal(0);
   approvalRate = signal(0);
 
-  today = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  nowTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  today = new Date().toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  nowTime = new Date().toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
   private vehiclesData: any[] = [];
   private bookingsData: any[] = [];
   private vehiclesLoaded = false;
   private bookingsLoaded = false;
-  private viewReady = false;
   private rendered = false;
 
   ngOnInit() {
@@ -51,8 +67,19 @@ export class Dashboard implements OnInit, AfterViewInit {
         this.vehiclesLoaded = true;
         this.totalVehicles.set(this.vehiclesData.length);
 
-        const fuels = this.vehiclesData.map((v: any) => Number(v.fuel_consumption)).filter((n: number) => !isNaN(n));
-        this.avgFuel.set(fuels.length ? Math.round((fuels.reduce((a: number, b: number) => a + b, 0) / fuels.length) * 10) / 10 : 0);
+        const fuels = this.vehiclesData
+          .map((v: any) => Number(v.fuel_consumption))
+          .filter((n: number) => !isNaN(n));
+
+        this.avgFuel.set(
+          fuels.length
+            ? Math.round(
+                (fuels.reduce((a: number, b: number) => a + b, 0) /
+                  fuels.length) *
+                  10
+              ) / 10
+            : 0
+        );
 
         this.computeUpcomingService();
         this.tryRender();
@@ -66,12 +93,29 @@ export class Dashboard implements OnInit, AfterViewInit {
         this.bookingsLoaded = true;
 
         this.totalBookings.set(this.bookingsData.length);
-        this.totalPending.set(this.bookingsData.filter((b: any) => b.status === 'pending' || b.status === 'approved_l1').length);
+
+        this.totalPending.set(
+          this.bookingsData.filter(
+            (b: any) =>
+              b.status === 'pending' || b.status === 'approved_l1'
+          ).length
+        );
+
         this.recentBookings.set(this.bookingsData.slice(0, 5));
 
-        const finished = this.bookingsData.filter((b: any) => ['approved_l2', 'completed', 'rejected'].includes(b.status));
-        const approved = this.bookingsData.filter((b: any) => ['approved_l2', 'completed'].includes(b.status));
-        this.approvalRate.set(finished.length ? Math.round((approved.length / finished.length) * 100) : 0);
+        const finished = this.bookingsData.filter((b: any) =>
+          ['approved_l2', 'completed', 'rejected'].includes(b.status)
+        );
+
+        const approved = this.bookingsData.filter((b: any) =>
+          ['approved_l2', 'completed'].includes(b.status)
+        );
+
+        this.approvalRate.set(
+          finished.length
+            ? Math.round((approved.length / finished.length) * 100)
+            : 0
+        );
 
         this.loading.set(false);
         this.tryRender();
@@ -84,7 +128,6 @@ export class Dashboard implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    this.viewReady = true;
     this.tryRender();
   }
 
@@ -92,14 +135,16 @@ export class Dashboard implements OnInit, AfterViewInit {
     if (this.rendered) return;
     if (!this.vehiclesLoaded || !this.bookingsLoaded) return;
 
-    // Beri jeda satu tick agar Angular selesai merender blok @else
-    // (elemen <canvas>) sebelum kita mengambil referensinya via ViewChild.
     setTimeout(() => {
-      if (!this.trendCanvas || !this.ownershipCanvas || !this.gaugeCanvas) {
-        // View belum siap, coba lagi sebentar
+      if (
+        !this.trendCanvas ||
+        !this.ownershipCanvas ||
+        !this.gaugeCanvas
+      ) {
         setTimeout(() => this.tryRender(), 50);
         return;
       }
+
       this.rendered = true;
       this.computeAvailability();
       this.renderCharts();
@@ -112,9 +157,15 @@ export class Dashboard implements OnInit, AfterViewInit {
 
     const list = this.vehiclesData
       .filter((v: any) => v.service_schedule)
-      .map((v: any) => ({ ...v, serviceDate: new Date(v.service_schedule) }))
+      .map((v: any) => ({
+        ...v,
+        serviceDate: new Date(v.service_schedule),
+      }))
       .filter((v: any) => v.serviceDate <= in14days)
-      .sort((a: any, b: any) => a.serviceDate.getTime() - b.serviceDate.getTime())
+      .sort(
+        (a: any, b: any) =>
+          a.serviceDate.getTime() - b.serviceDate.getTime()
+      )
       .slice(0, 5);
 
     this.upcomingService.set(list);
@@ -122,16 +173,25 @@ export class Dashboard implements OnInit, AfterViewInit {
 
   private computeAvailability() {
     const now = new Date();
+
     const busyVehicleIds = new Set(
       this.bookingsData
-        .filter((b: any) => ['pending', 'approved_l1', 'approved_l2'].includes(b.status))
-        .filter((b: any) => new Date(b.start_date) <= now && now <= new Date(b.end_date))
+        .filter((b: any) =>
+          ['pending', 'approved_l1', 'approved_l2'].includes(b.status)
+        )
+        .filter(
+          (b: any) =>
+            new Date(b.start_date) <= now && now <= new Date(b.end_date)
+        )
         .map((b: any) => b.vehicle_id)
     );
 
     const total = this.vehiclesData.length;
     const available = total - busyVehicleIds.size;
-    this.availabilityRate.set(total ? Math.round((available / total) * 100) : 0);
+
+    this.availabilityRate.set(
+      total ? Math.round((available / total) * 100) : 0
+    );
   }
 
   private renderCharts() {
@@ -140,20 +200,78 @@ export class Dashboard implements OnInit, AfterViewInit {
     this.renderGaugeChart();
   }
 
+  /*
+   * Mengubah Date/string menjadi format YYYY-MM-DD berdasarkan
+   * zona waktu lokal, sehingga tidak bergeser akibat toISOString().
+   */
+  private dateKey(value: Date | string | null | undefined): string {
+    const date = value instanceof Date ? value : new Date(value ?? '');
+
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  }
+
+  /*
+   * Prioritas tanggal:
+   * 1. created_at dari backend
+   * 2. createdAt / booking_date bila namanya berbeda
+   * 3. tanggal dari kode BK-YYYYMMDD-xxxxx
+   * 4. start_date sebagai cadangan terakhir
+   */
+  private bookingCreatedDateKey(booking: any): string {
+    const createdAt =
+      booking.created_at ?? booking.createdAt ?? booking.booking_date;
+
+    if (createdAt) {
+      return this.dateKey(createdAt);
+    }
+
+    const code = String(booking.booking_code ?? '');
+    const match = code.match(/^BK-(\d{4})(\d{2})(\d{2})-/);
+
+    if (match) {
+      return `${match[1]}-${match[2]}-${match[3]}`;
+    }
+
+    return this.dateKey(booking.start_date);
+  }
+
   private renderTrendChart() {
     const days: string[] = [];
     const counts: number[] = [];
+
     for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const label = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
-      const dateStr = d.toISOString().slice(0, 10);
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+
+      const label = date.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+      });
+
+      const currentDateKey = this.dateKey(date);
+
+      const count = this.bookingsData.filter(
+        (booking: any) =>
+          this.bookingCreatedDateKey(booking) === currentDateKey
+      ).length;
+
       days.push(label);
-      counts.push(this.bookingsData.filter((b: any) => (b.start_date ?? '').slice(0, 10) === dateStr).length);
+      counts.push(count);
     }
 
     const ctx = this.trendCanvas.nativeElement.getContext('2d');
-    let fillGradient;
+
+    let fillGradient: CanvasGradient | undefined;
+
     if (ctx) {
       fillGradient = ctx.createLinearGradient(0, 0, 0, 260);
       fillGradient.addColorStop(0, 'rgba(22,163,74,0.25)');
@@ -164,52 +282,94 @@ export class Dashboard implements OnInit, AfterViewInit {
       type: 'line',
       data: {
         labels: days,
-        datasets: [{
-          label: 'Pemesanan',
-          data: counts,
-          borderColor: '#16a34a',
-          backgroundColor: fillGradient ?? 'rgba(22,163,74,0.15)',
-          fill: true,
-          tension: 0.35,
-          pointRadius: 4,
-          pointBackgroundColor: '#16a34a',
-          pointBorderColor: 'white',
-          pointBorderWidth: 2,
-        }],
+        datasets: [
+          {
+            label: 'Pemesanan',
+            data: counts,
+            borderColor: '#16a34a',
+            backgroundColor:
+              fillGradient ?? 'rgba(22,163,74,0.15)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 4,
+            pointBackgroundColor: '#16a34a',
+            pointBorderColor: 'white',
+            pointBorderWidth: 2,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: {
+            display: false,
+          },
+        },
         scales: {
-          y: { beginAtZero: true, ticks: { stepSize: 1, font: { family: 'Baloo 2' } }, grid: { color: '#eef2f0' } },
-          x: { grid: { display: false }, ticks: { font: { family: 'Baloo 2' } } },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1,
+              font: {
+                family: 'Baloo 2',
+              },
+            },
+            grid: {
+              color: '#eef2f0',
+            },
+          },
+          x: {
+            grid: {
+              display: false,
+            },
+            ticks: {
+              font: {
+                family: 'Baloo 2',
+              },
+            },
+          },
         },
       },
     });
   }
 
   private renderOwnershipChart() {
-    const milik = this.vehiclesData.filter((v: any) => v.ownership === 'milik_perusahaan').length;
-    const sewa = this.vehiclesData.filter((v: any) => v.ownership === 'sewa').length;
+    const milik = this.vehiclesData.filter(
+      (v: any) => v.ownership === 'milik_perusahaan'
+    ).length;
+
+    const sewa = this.vehiclesData.filter(
+      (v: any) => v.ownership === 'sewa'
+    ).length;
 
     new Chart(this.ownershipCanvas.nativeElement, {
       type: 'doughnut',
       data: {
         labels: ['Milik Perusahaan', 'Sewa'],
-        datasets: [{
-          data: [milik, sewa],
-          backgroundColor: ['#16a34a', '#f59e0b'],
-          borderWidth: 0,
-          spacing: 3,
-        }],
+        datasets: [
+          {
+            data: [milik, sewa],
+            backgroundColor: ['#16a34a', '#f59e0b'],
+            borderWidth: 0,
+            spacing: 3,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         cutout: '68%',
         plugins: {
-          legend: { position: 'bottom', labels: { boxWidth: 10, font: { family: 'Baloo 2' } } },
+          legend: {
+            position: 'bottom',
+            labels: {
+              boxWidth: 10,
+              font: {
+                family: 'Baloo 2',
+              },
+            },
+          },
         },
       },
     });
@@ -221,11 +381,16 @@ export class Dashboard implements OnInit, AfterViewInit {
     new Chart(this.gaugeCanvas.nativeElement, {
       type: 'doughnut',
       data: {
-        datasets: [{
-          data: [value, 100 - value],
-          backgroundColor: ['#4ade80', 'rgba(255,255,255,0.15)'],
-          borderWidth: 0,
-        }],
+        datasets: [
+          {
+            data: [value, 100 - value],
+            backgroundColor: [
+              '#4ade80',
+              'rgba(255,255,255,0.15)',
+            ],
+            borderWidth: 0,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -233,7 +398,14 @@ export class Dashboard implements OnInit, AfterViewInit {
         circumference: 180,
         rotation: 270,
         cutout: '78%',
-        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            enabled: false,
+          },
+        },
       },
     });
   }
@@ -246,6 +418,7 @@ export class Dashboard implements OnInit, AfterViewInit {
       rejected: 'Ditolak',
       completed: 'Selesai',
     };
+
     return map[status] ?? status;
   }
 
@@ -257,11 +430,15 @@ export class Dashboard implements OnInit, AfterViewInit {
       rejected: 'badge-red',
       completed: 'badge-green',
     };
+
     return map[status] ?? '';
   }
 
   daysUntil(dateStr: string): number {
-    const diff = new Date(dateStr).getTime() - new Date().setHours(0, 0, 0, 0);
+    const diff =
+      new Date(dateStr).getTime() -
+      new Date().setHours(0, 0, 0, 0);
+
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   }
 }

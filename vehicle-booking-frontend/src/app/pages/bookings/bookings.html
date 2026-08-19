@@ -153,7 +153,7 @@
                 </td>
                 <td>
                   <div class="vehicle-cell">
-                    <img [src]="vehicleImage(b.vehicle_type)" [alt]="b.vehicle_name">
+                    <img [src]="vehicleImage(b)" [alt]="b.vehicle_name">
                     <div class="vehicle-info">
                       <span class="vehicle-name">{{ b.vehicle_name }}</span>
                       <span class="plate-chip">{{ b.license_plate }}</span>
@@ -187,9 +187,7 @@
                       <div class="menu-dropdown">
                         <button (click)="openDetail(b)">Lihat Detail</button>
                         @if (b.status === 'approved_l2' && auth.isAdmin()) {
-                          <button class="menu-success" (click)="markComplete(b.id)" [disabled]="completing() === b.id">
-                            {{ completing() === b.id ? 'Memproses...' : 'Tandai Selesai' }}
-                          </button>
+                          <button class="menu-success" (click)="openCompleteModal(b)">Tandai Selesai</button>
                         }
                       </div>
                     }
@@ -314,7 +312,7 @@
     <div class="modal-overlay" (click)="closeDetail()">
       <div class="modal-card modal-small" (click)="$event.stopPropagation()">
         <h3 class="modal-title">{{ detailBooking().booking_code }}</h3>
-        <img class="detail-photo" [src]="vehicleImage(detailBooking().vehicle_type)" [alt]="detailBooking().vehicle_name">
+        <img class="detail-photo" [src]="vehicleImage(detailBooking())" [alt]="detailBooking().vehicle_name">
 
         <div class="detail-grid">
           <div><strong>Kendaraan</strong><span>{{ detailBooking().vehicle_name }} ({{ detailBooking().license_plate }})</span></div>
@@ -331,15 +329,70 @@
               <span>{{ detailBooking().rejection_reason }}</span>
             </div>
           }
+
+          @if (detailBooking().fuel_log) {
+            <div><strong>Odometer</strong><span>{{ detailBooking().fuel_log.odometer_start ?? '-' }} km &rarr; {{ detailBooking().fuel_log.odometer_end ?? '-' }} km</span></div>
+            <div><strong>BBM Terpakai</strong><span>{{ detailBooking().fuel_log.fuel_liters ?? '-' }} liter</span></div>
+            @if (detailBooking().fuel_log.notes) {
+              <div class="notes-box">
+                <strong>Catatan Selesai</strong>
+                <span>{{ detailBooking().fuel_log.notes }}</span>
+              </div>
+            }
+          }
         </div>
 
         <div class="modal-actions">
           @if (detailBooking().status === 'approved_l2' && auth.isAdmin()) {
-            <button class="btn-success" (click)="markComplete(detailBooking().id)" [disabled]="completing() === detailBooking().id">
-              {{ completing() === detailBooking().id ? 'Memproses...' : 'Tandai Selesai' }}
-            </button>
+            <button class="btn-success" (click)="openCompleteModal(detailBooking())">Tandai Selesai</button>
           }
           <button class="btn-ghost-lg" (click)="closeDetail()">Tutup</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (completeBookingTarget()) {
+    <div class="modal-overlay" (click)="closeCompleteModal()">
+      <div class="modal-card modal-small" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">Tandai Selesai — {{ completeBookingTarget().booking_code }}</h3>
+        <p class="modal-desc">Catat odometer dan BBM terpakai untuk pemakaian ini (opsional).</p>
+
+        <div class="form-grid">
+          <div class="field">
+            <label>Odometer Awal (km)</label>
+            <input type="number" [(ngModel)]="odometerStart" placeholder="Otomatis dari trip sebelumnya">
+          </div>
+
+          <div class="field">
+            <label>Odometer Akhir (km)</label>
+            <input type="number" [(ngModel)]="odometerEnd" placeholder="Isi odometer saat kembali">
+          </div>
+
+          <div class="field">
+            <label>BBM Terisi (liter)</label>
+            <input type="number" step="0.1" [(ngModel)]="fuelLiters" placeholder="Contoh: 25.5">
+          </div>
+
+          <div class="field">
+            <label>Catatan</label>
+            <input type="text" [(ngModel)]="completeNotes" placeholder="Opsional">
+          </div>
+        </div>
+
+        @if (distanceTraveled() !== null) {
+          <p class="distance-note">Jarak tempuh: {{ distanceTraveled() }} km</p>
+        }
+
+        @if (completeError()) {
+          <p class="error-text form-error">{{ completeError() }}</p>
+        }
+
+        <div class="modal-actions">
+          <button class="btn-success" (click)="confirmComplete()" [disabled]="completing()">
+            {{ completing() ? 'Memproses...' : 'Tandai Selesai' }}
+          </button>
+          <button class="btn-ghost-lg" (click)="closeCompleteModal()">Batal</button>
         </div>
       </div>
     </div>

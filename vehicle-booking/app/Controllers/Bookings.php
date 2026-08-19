@@ -5,6 +5,7 @@ namespace App\Controllers;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\VehicleBookingsModel;
 use App\Models\BookingApprovalsModel;
+use App\Models\FuelLogsModel;
 use App\Libraries\ActivityLogger;
 
 class Bookings extends ResourceController
@@ -16,7 +17,7 @@ class Bookings extends ResourceController
         $db = \Config\Database::connect();
 
         $bookings = $db->table("vehicle_bookings b")
-            ->select("b.*, v.name as vehicle_name, v.license_plate, v.type as vehicle_type, d.name as driver_name, u.name as requester_name")
+            ->select("b.*, v.name as vehicle_name, v.license_plate, v.type as vehicle_type, v.image_url as vehicle_image_url, d.name as driver_name, u.name as requester_name")
             ->join("vehicles v", "v.id = b.vehicle_id", "left")
             ->join("drivers d", "d.id = b.driver_id", "left")
             ->join("users u", "u.id = b.requested_by", "left")
@@ -37,6 +38,13 @@ class Bookings extends ResourceController
                     $b["rejection_reason"] = $rejected["notes"];
                 }
             }
+
+            $fuelLog = $db->table("fuel_logs")
+                ->where("booking_id", $b["id"])
+                ->get()
+                ->getRowArray();
+
+            $b["fuel_log"] = $fuelLog ?: null;
         }
 
         return $this->respond([
@@ -47,14 +55,41 @@ class Bookings extends ResourceController
 
     public function show($id = null)
     {
-        $bookingModel = new VehicleBookingsModel();
+        $db = \Config\Database::connect();
 
-        $booking = $bookingModel->find($id);
+        $booking = $db->table("vehicle_bookings b")
+            ->select("b.*, v.name as vehicle_name, v.license_plate, v.type as vehicle_type, d.name as driver_name, u.name as requester_name")
+            ->join("vehicles v", "v.id = b.vehicle_id", "left")
+            ->join("drivers d", "d.id = b.driver_id", "left")
+            ->join("users u", "u.id = b.requested_by", "left")
+            ->where("b.id", $id)
+            ->get()
+            ->getRowArray();
+
         if (! $booking) {
             return $this->failNotFound("Booking tidak ditemukan");
         }
 
-        $db = \Config\Database::connect();
+        $booking["rejection_reason"] = null;
+        if ($booking["status"] === "rejected") {
+            $rejected = $db->table("booking_approvals")
+                ->where("booking_id", $id)
+                ->where("status", "rejected")
+                ->get()
+                ->getRowArray();
+
+            if ($rejected) {
+                $booking["rejection_reason"] = $rejected["notes"];
+            }
+        }
+
+        $fuelLog = $db->table("fuel_logs")
+            ->where("booking_id", $id)
+            ->get()
+            ->getRowArray();
+
+        $booking["fuel_log"] = $fuelLog ?: null;
+
         $approvals = $db->table("booking_approvals ba")
             ->select("ba.*, u.name as approver_name")
             ->join("users u", "u.id = ba.approver_id", "left")
@@ -68,6 +103,26 @@ class Bookings extends ResourceController
         return $this->respond([
             "status" => 200,
             "data"   => $booking,
+        ]);
+    }
+
+    // GET /api/vehicles/{id}/last-odometer
+    // Mengambil odometer_end terakhir dari kendaraan tertentu, untuk dipakai
+    // sebagai nilai default odometer_start pada pemakaian berikutnya.
+    public function lastOdometer($vehicleId = null)
+    {
+        $db = \Config\Database::connect();
+
+        $last = $db->table("fuel_logs")
+            ->where("vehicle_id", $vehicleId)
+            ->where("odometer_end IS NOT NULL")
+            ->orderBy("id", "DESC")
+            ->get()
+            ->getRowArray();
+
+        return $this->respond([
+            "status" => 200,
+            "data"   => ["last_odometer" => $last["odometer_end"] ?? null],
         ]);
     }
 
@@ -221,6 +276,8 @@ class Bookings extends ResourceController
         ]);
     }
 
+    // POST /api/bookings/{id}/complete
+    // Body opsional: odometer_start, odometer_end, fuel_liters, notes
     public function complete($id = null)
     {
         $bookingModel = new VehicleBookingsModel();
@@ -234,7 +291,25 @@ class Bookings extends ResourceController
             return $this->fail("Hanya pemesanan yang sudah disetujui penuh yang dapat ditandai selesai", 400);
         }
 
+        $data = $this->request->getJSON(true) ?? [];
+
+        if (! empty($data["odometer_start"]) && ! empty($data["odometer_end"])) {
+            if ((int) $data["odometer_end"] < (int) $data["odometer_start"]) {
+                return $this->fail("Odometer akhir tidak boleh lebih kecil dari odometer awal", 400);
+            }
+        }
+
         $bookingModel->update($id, ["status" => "completed"]);
+
+        $fuelLogModel = new FuelLogsModel();
+        $fuelLogModel->insert([
+            "booking_id"     => $id,
+            "vehicle_id"     => $booking["vehicle_id"],
+            "odometer_start" => $data["odometer_start"] ?? null,
+            "odometer_end"   => $data["odometer_end"] ?? null,
+            "fuel_liters"    => $data["fuel_liters"] ?? null,
+            "notes"          => $data["notes"] ?? null,
+        ]);
 
         ActivityLogger::log(null, "complete_booking", "Menandai pemesanan selesai: " . $booking["booking_code"]);
 

@@ -17,7 +17,8 @@ class VehiclesModel extends Model
         'type', 
         'ownership', 
         'fuel_consumption', 
-        'service_schedule'
+        'service_schedule',
+        'image_url',
     ];
 
     protected $useTimestamps    = true;

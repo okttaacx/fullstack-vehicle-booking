@@ -15,6 +15,7 @@ export const routes: Routes = [
       { path: 'bookings', loadComponent: () => import('./pages/bookings/bookings').then(m => m.Bookings) },
       { path: 'approvals', loadComponent: () => import('./pages/approvals/approvals').then(m => m.Approvals) },
       { path: 'drivers', loadComponent: () => import('./pages/drivers/drivers').then(m => m.Drivers) },
+      { path: 'calendar', loadComponent: () => import('./pages/calendar/calendar').then(m => m.Calendar) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },

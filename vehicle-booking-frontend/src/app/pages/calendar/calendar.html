@@ -1,0 +1,152 @@
+<div class="cal">
+  <section class="cal-hero">
+    <div class="hero-orb hero-orb-one"></div>
+    <div class="hero-orb hero-orb-two"></div>
+
+    <div class="cal-header">
+      <div class="title-area">
+        <div class="title-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="3"></rect>
+            <path d="M8 2v4M16 2v4M3 10h18"></path>
+            <path d="M8 14h.01M12 14h.01M16 14h.01"></path>
+          </svg>
+        </div>
+
+        <div>
+          <p class="eyebrow">VEHICLE SCHEDULING</p>
+          <h1 class="cal-title">Kalender Pemakaian</h1>
+          <p class="cal-sub">
+            Pantau jadwal seluruh kendaraan dalam satu tampilan mingguan.
+          </p>
+        </div>
+      </div>
+
+      <div class="cal-nav">
+        <button class="btn-nav" (click)="prevWeek()" title="Minggu sebelumnya">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 6l-6 6 6 6"></path>
+          </svg>
+        </button>
+
+        <button class="btn-today" (click)="goToday()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M12 7v5l3 2"></path>
+          </svg>
+          Hari Ini
+        </button>
+
+        <span class="week-label">{{ weekLabel() }}</span>
+
+        <button class="btn-nav" (click)="nextWeek()" title="Minggu berikutnya">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 6l6 6-6 6"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item">
+        <span class="dot dot-pending"></span>
+        <span>Menunggu L1</span>
+      </div>
+
+      <div class="legend-item">
+        <span class="dot dot-approved-l1"></span>
+        <span>Menunggu L2</span>
+      </div>
+
+      <div class="legend-item">
+        <span class="dot dot-approved-l2"></span>
+        <span>Disetujui</span>
+      </div>
+
+      <div class="legend-item">
+        <span class="dot dot-completed"></span>
+        <span>Selesai</span>
+      </div>
+    </div>
+  </section>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="loader"></div>
+      <div>
+        <strong>Menyiapkan kalender...</strong>
+        <p>Memuat jadwal penggunaan kendaraan.</p>
+      </div>
+    </div>
+  } @else {
+    <section class="calendar-card">
+      <div class="calendar-card-head">
+        <div>
+          <h2>Jadwal Mingguan</h2>
+          <p>{{ vehicles().length }} kendaraan terdaftar pada kalender</p>
+        </div>
+
+        <div class="calendar-status">
+          <span class="status-pulse"></span>
+          Jadwal diperbarui
+        </div>
+      </div>
+
+      <div class="cal-grid-wrap">
+        <div class="cal-grid" [style.grid-template-columns]="'190px repeat(7, minmax(92px, 1fr))'">
+          <div class="cal-cell head-cell vehicle-col">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 13l2-6a2 2 0 0 1 2-1.4h10A2 2 0 0 1 19 7l2 6"></path>
+              <path d="M2 13h20v4a1 1 0 0 1-1 1h-1.5a1.5 1.5 0 0 1-3 0h-9a1.5 1.5 0 0 1-3 0H3a1 1 0 0 1-1-1v-4z"></path>
+            </svg>
+            Kendaraan
+          </div>
+
+          @for (day of weekDays(); track day) {
+            <div class="cal-cell head-cell" [class.today-col]="isToday(day)">
+              <span class="day-name">{{ day | date: 'EEE' }}</span>
+              <span class="day-num">{{ day | date: 'd' }}</span>
+            </div>
+          }
+
+          @for (v of vehicles(); track v.id) {
+            <div class="cal-cell vehicle-cell">
+              <span class="vehicle-avatar">{{ v.name?.charAt(0) ?? 'K' }}</span>
+
+              <div class="vehicle-info">
+                <strong>{{ v.name }}</strong>
+                <span>{{ v.license_plate || 'Tanpa plat nomor' }}</span>
+              </div>
+            </div>
+
+            <div class="row-track" [style.grid-column]="'span 7'">
+              @for (b of bookingsForVehicle(v.id); track b.id) {
+                <div
+                  class="bar"
+                  [class]="statusBarClass(b.status)"
+                  [style.left]="barStyle(b).left"
+                  [style.width]="barStyle(b).width"
+                  [title]="b.booking_code + ' — ' + b.start_date + ' s/d ' + b.end_date"
+                >
+                  <span class="bar-shine"></span>
+                  <span class="bar-code">{{ b.booking_code }}</span>
+                </div>
+              }
+            </div>
+          } @empty {
+            <div class="empty-row" [style.grid-column]="'1 / -1'">
+              <div class="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                  <rect x="3" y="4" width="18" height="18" rx="3"></rect>
+                  <path d="M8 2v4M16 2v4M3 10h18"></path>
+                </svg>
+              </div>
+              <strong>Belum ada kendaraan</strong>
+              <span>Tambahkan data kendaraan untuk menampilkan jadwal.</span>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+  }
+</div>

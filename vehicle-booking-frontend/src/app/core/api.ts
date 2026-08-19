@@ -64,8 +64,12 @@ export class Api {
     return this.http.delete<any>(`${this.base}/bookings/${id}`);
   }
 
-  completeBooking(id: number) {
-    return this.http.post<any>(`${this.base}/bookings/${id}/complete`, {});
+  getLastOdometer(vehicleId: number) {
+    return this.http.get<any>(`${this.base}/vehicles/${vehicleId}/last-odometer`);
+  }
+
+  completeBooking(id: number, payload?: any) {
+    return this.http.post<any>(`${this.base}/bookings/${id}/complete`, payload ?? {});
   }
 
   getApprovals(approverId: number) {

@@ -36,6 +36,7 @@ export class Vehicles implements OnInit {
   ownership = '';
   fuelConsumption: number | null = null;
   serviceSchedule = '';
+  imageUrl = '';
 
   deletingId = signal<number | null>(null);
   openMenuId = signal<number | null>(null);
@@ -66,13 +67,20 @@ export class Vehicles implements OnInit {
     return list;
   });
 
+  // Tambahan baru untuk stat card
+  ownedCount = computed(() => this.vehicles().filter(v => v.ownership === 'milik_perusahaan').length);
+  rentedCount = computed(() => this.vehicles().filter(v => v.ownership === 'sewa').length);
+
   ngOnInit() {
     this.loadVehicles();
-    this.api.getBookings().subscribe({ next: (res) => this.bookings.set(res.data ?? []) });
+    this.api.getBookings().subscribe({
+      next: (res) => this.bookings.set(res.data ?? []),
+    });
   }
 
   loadVehicles() {
     this.loading.set(true);
+
     this.api.getVehicles().subscribe({
       next: (res) => {
         this.vehicles.set(res.data ?? []);
@@ -85,8 +93,12 @@ export class Vehicles implements OnInit {
     });
   }
 
-  vehicleImage(type: string): string {
-    return type === 'angkutan_barang'
+  vehicleImage(v: any): string {
+    if (v.image_url) {
+      return v.image_url;
+    }
+
+    return v.type === 'angkutan_barang'
       ? 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=800&auto=format&fit=crop'
       : 'https://images.unsplash.com/photo-1605152322346-bd2391778772?q=80&w=800&auto=format&fit=crop';
   }
@@ -136,7 +148,10 @@ export class Vehicles implements OnInit {
   vehicleBookingHistory(vehicleId: number) {
     return this.bookings()
       .filter((b: any) => Number(b.vehicle_id) === Number(vehicleId))
-      .sort((a: any, b: any) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
+      );
   }
 
   openCreateForm() {
@@ -154,6 +169,7 @@ export class Vehicles implements OnInit {
     this.ownership = v.ownership;
     this.fuelConsumption = v.fuel_consumption;
     this.serviceSchedule = v.service_schedule ?? '';
+    this.imageUrl = v.image_url ?? '';
     this.showForm.set(true);
     this.formError.set('');
     this.closeMenu();
@@ -171,6 +187,7 @@ export class Vehicles implements OnInit {
     this.ownership = '';
     this.fuelConsumption = null;
     this.serviceSchedule = '';
+    this.imageUrl = '';
   }
 
   submitVehicle() {
@@ -190,6 +207,7 @@ export class Vehicles implements OnInit {
       ownership: this.ownership,
       fuel_consumption: this.fuelConsumption,
       service_schedule: this.serviceSchedule || null,
+      image_url: this.imageUrl || null,
     };
 
     const request = this.editingId
@@ -204,7 +222,9 @@ export class Vehicles implements OnInit {
         this.loadVehicles();
       },
       error: (err) => {
-        this.formError.set(err?.error?.messages?.error ?? 'Gagal menyimpan data kendaraan');
+        this.formError.set(
+          err?.error?.messages?.error ?? 'Gagal menyimpan data kendaraan'
+        );
         this.submitting.set(false);
       },
     });
@@ -245,9 +265,10 @@ export class Vehicles implements OnInit {
       pending: 'Menunggu L1',
       approved_l1: 'Menunggu L2',
       approved_l2: 'Disetujui',
-      rejected: 'Ditolak',
       completed: 'Selesai',
+      rejected: 'Ditolak',
     };
+
     return map[status] ?? status;
   }
 
@@ -256,9 +277,10 @@ export class Vehicles implements OnInit {
       pending: 'badge-amber',
       approved_l1: 'badge-blue',
       approved_l2: 'badge-green',
+      completed: 'badge-gray',
       rejected: 'badge-red',
-      completed: 'badge-green',
     };
+
     return map[status] ?? '';
   }
 }

@@ -51,7 +51,15 @@ export class Bookings implements OnInit {
   openMenuId = signal<number | null>(null);
   copiedId = signal<number | null>(null);
   detailBooking = signal<any | null>(null);
-  completing = signal<number | null>(null);
+
+  // Modal "Tandai Selesai"
+  completeBookingTarget = signal<any | null>(null);
+  completing = signal(false);
+  completeError = signal('');
+  odometerStart: number | null = null;
+  odometerEnd: number | null = null;
+  fuelLiters: number | null = null;
+  completeNotes = '';
 
   get approversLevel1() {
     return this.approvers().filter(a => String(a.level) === '1');
@@ -117,8 +125,11 @@ export class Bookings implements OnInit {
     });
   }
 
-  vehicleImage(type: string): string {
-    return type === 'angkutan_barang'
+  vehicleImage(b: any): string {
+    if (b.vehicle_image_url) {
+      return b.vehicle_image_url;
+    }
+    return b.vehicle_type === 'angkutan_barang'
       ? 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=400&auto=format&fit=crop'
       : 'https://images.unsplash.com/photo-1605152322346-bd2391778772?q=80&w=400&auto=format&fit=crop';
   }
@@ -162,6 +173,15 @@ export class Bookings implements OnInit {
   openDetail(b: any) {
     this.detailBooking.set(b);
     this.closeMenu();
+
+    this.api.getBookingDetail(b.id).subscribe({
+      next: (res) => {
+        this.detailBooking.set(res.data ?? b);
+      },
+      error: () => {
+        // biarin tampilan pakai data dari list kalau fetch detail gagal
+      },
+    });
   }
 
   closeDetail() {
@@ -266,19 +286,67 @@ export class Bookings implements OnInit {
     });
   }
 
-  markComplete(id: number) {
-    this.completing.set(id);
-    this.api.completeBooking(id).subscribe({
-      next: () => {
-        this.completing.set(null);
-        this.closeMenu();
-        this.closeDetail();
-        this.loadBookings();
+  // ==== Tandai Selesai (dengan input BBM & odometer) ====
+
+  openCompleteModal(b: any) {
+    this.completeBookingTarget.set(b);
+    this.completeError.set('');
+    this.odometerEnd = null;
+    this.fuelLiters = null;
+    this.completeNotes = '';
+    this.closeMenu();
+    this.closeDetail();
+
+    this.api.getLastOdometer(b.vehicle_id).subscribe({
+      next: (res) => {
+        this.odometerStart = res.data?.last_odometer ?? null;
       },
       error: () => {
-        this.completing.set(null);
+        this.odometerStart = null;
       },
     });
+  }
+
+  closeCompleteModal() {
+    this.completeBookingTarget.set(null);
+  }
+
+  confirmComplete() {
+    const target = this.completeBookingTarget();
+    if (!target) return;
+
+    this.completeError.set('');
+
+    if (this.odometerStart !== null && this.odometerEnd !== null && this.odometerEnd < this.odometerStart) {
+      this.completeError.set('Odometer akhir tidak boleh lebih kecil dari odometer awal');
+      return;
+    }
+
+    this.completing.set(true);
+
+    const payload = {
+      odometer_start: this.odometerStart,
+      odometer_end: this.odometerEnd,
+      fuelLiters: this.fuelLiters,
+      notes: this.completeNotes || null,
+    };
+
+    this.api.completeBooking(target.id, payload).subscribe({
+      next: () => {
+        this.completing.set(false);
+        this.completeBookingTarget.set(null);
+        this.loadBookings();
+      },
+      error: (err) => {
+        this.completeError.set(err?.error?.messages?.error ?? 'Gagal menandai pemesanan selesai');
+        this.completing.set(false);
+      },
+    });
+  }
+
+  distanceTraveled(): number | null {
+    if (this.odometerStart === null || this.odometerEnd === null) return null;
+    return this.odometerEnd - this.odometerStart;
   }
 
   exportToExcel() {

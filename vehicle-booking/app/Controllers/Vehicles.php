@@ -38,6 +38,7 @@ class Vehicles extends ResourceController
             "ownership"         => $data["ownership"],
             "fuel_consumption"  => $data["fuel_consumption"] ?? null,
             "service_schedule"  => $data["service_schedule"] ?? null,
+            "image_url"         => $data["image_url"] ?? null,
         ]);
 
         ActivityLogger::log(null, "create_vehicle", "Menambahkan kendaraan baru: " . $data["name"]);
@@ -67,6 +68,7 @@ class Vehicles extends ResourceController
             "ownership"         => $data["ownership"] ?? $vehicle["ownership"],
             "fuel_consumption"  => $data["fuel_consumption"] ?? $vehicle["fuel_consumption"],
             "service_schedule"  => $data["service_schedule"] ?? $vehicle["service_schedule"],
+            "image_url"         => $data["image_url"] ?? $vehicle["image_url"],
         ]);
 
         ActivityLogger::log(null, "update_vehicle", "Memperbarui data kendaraan ID {$id}");

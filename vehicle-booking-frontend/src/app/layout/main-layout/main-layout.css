@@ -15,21 +15,22 @@
   background: linear-gradient(175deg, #0a2e22 0%, #0f3d2e 55%, #0a2e22 100%);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   padding: 24px 18px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .sidebar-top {
   position: relative;
   z-index: 2;
+  flex-shrink: 0;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 6px 20px 6px;
+  padding: 6px 6px 20px;
   position: relative;
 }
 
@@ -83,31 +84,32 @@
   margin-bottom: 18px;
 }
 
+/* Menu sidebar — ukuran ringkas */
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 13px 14px;
-  border-radius: 16px;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.55);
   text-decoration: none;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
 }
 
 .nav-icon-box {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;
@@ -116,8 +118,8 @@
 }
 
 .nav-icon-box svg {
-  width: 17px;
-  height: 17px;
+  width: 13px;
+  height: 13px;
   display: block;
 }
 
@@ -129,16 +131,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
   opacity: 0;
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .nav-chevron svg {
-  width: 15px;
-  height: 15px;
+  width: 11px;
+  height: 11px;
   display: block;
 }
 
@@ -167,32 +169,138 @@
   opacity: 0.9;
 }
 
-/* Decorative illustration */
+/* Ilustrasi mobil */
 .sidebar-illustration {
-  position: absolute;
-  bottom: 90px;
-  left: 0;
-  right: 0;
-  height: 220px;
-  color: #4ade80;
+  flex: 0 1 auto;
+  width: 100%;
+  aspect-ratio: 400 / 220;
+  max-height: 160px;
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  position: relative;
   z-index: 1;
   pointer-events: none;
+  margin: 4px 0 8px;
+  padding: 6px 4px;
 }
 
-.sidebar-illustration svg {
-  width: 100%;
-  height: 100%;
+.car-illustration {
+  width: 84%;
+  height: auto;
+  max-height: 100%;
+  overflow: visible;
 }
 
-/* User card */
+.road-line {
+  animation: roadFlow 1.6s linear infinite;
+}
+
+@keyframes roadFlow {
+  to {
+    stroke-dashoffset: -60;
+  }
+}
+
+.ground-glow {
+  animation: glowPulse 2.4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scaleX(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scaleX(0.9);
+  }
+}
+
+.car-float {
+  animation: carFloat 2.4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes carFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.headlight-glow {
+  animation: glowPulse 1.8s ease-in-out infinite;
+}
+
+.wheel-back {
+  transform-origin: 118px 152px;
+  animation: wheelSpin 1s linear infinite;
+}
+
+.wheel-front {
+  transform-origin: 288px 152px;
+  animation: wheelSpin 1s linear infinite;
+}
+
+@keyframes wheelSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spark {
+  animation: sparkRise 3s ease-in-out infinite;
+  opacity: 0;
+}
+
+.spark-1 {
+  animation-delay: 0s;
+}
+
+.spark-2 {
+  animation-delay: 1s;
+}
+
+.spark-3 {
+  animation-delay: 2s;
+}
+
+@keyframes sparkRise {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+
+  25% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-22px);
+  }
+}
+
+/* User card — ukuran compact */
 .user-card {
   position: relative;
   z-index: 2;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 16px;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
   cursor: pointer;
@@ -209,8 +317,8 @@
 }
 
 .avatar {
-  width: 38px;
-  height: 38px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: linear-gradient(155deg, #22c55e, #0f3d2e);
   color: white;
@@ -218,15 +326,15 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 12px;
 }
 
 .status-dot {
   position: absolute;
   bottom: -1px;
   right: -1px;
-  width: 11px;
-  height: 11px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: #4ade80;
   border: 2px solid #0f3d2e;
@@ -241,7 +349,7 @@
 }
 
 .user-name {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   color: white;
   white-space: nowrap;
@@ -250,14 +358,14 @@
 }
 
 .user-role {
-  font-size: 11px;
+  font-size: 10px;
   color: rgba(255, 255, 255, 0.45);
   text-transform: capitalize;
 }
 
 .dropdown-chevron {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   color: rgba(255, 255, 255, 0.5);
   flex-shrink: 0;
   transition: transform 0.15s ease;
@@ -290,7 +398,7 @@
   background: #1a4a36;
 }
 
-/* Content area */
+/* Area konten */
 .page-body {
   flex: 1;
   padding: 28px;
@@ -320,5 +428,17 @@
 
   .page-body {
     height: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .road-line,
+  .ground-glow,
+  .car-float,
+  .headlight-glow,
+  .wheel-back,
+  .wheel-front,
+  .spark {
+    animation: none;
   }
 }

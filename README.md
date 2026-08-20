@@ -50,6 +50,9 @@ Aplikasi pemesanan kendaraan perusahaan (tambang nikel) untuk memonitor kendaraa
 ## ✨ Fitur
 
 - **Autentikasi** — login berbasis role (`admin` dan `approver`), session disimpan di browser.
+- **Ganti Password Mandiri** — setiap user (admin maupun approver) dapat mengubah password akunnya sendiri melalui dropdown pada kartu profil di sidebar, dengan verifikasi password lama wajib sebelum password baru disimpan.
+- **Kelola User** — halaman khusus **Admin** untuk mengelola seluruh akun (tambah, edit, hapus), mengatur role (`admin`/`approver`) beserta level approval (1 atau 2) untuk akun bertipe approver, lengkap pencarian berdasarkan nama/username.
+- **Riwayat Aktivitas (Activity Log)** — halaman khusus **Admin** yang menampilkan seluruh jejak aktivitas penting di sistem (login, ganti password, buat/ubah/hapus data, approve/reject, tandai selesai, dsb) lengkap dengan pelaku, waktu, alamat IP, serta pencarian bebas dan filter berdasarkan jenis aksi maupun rentang tanggal.
 - **Manajemen Kendaraan** — CRUD lengkap (tambah, lihat, edit, hapus), pencarian, filter tipe/kepemilikan, **foto kendaraan yang dapat disesuaikan per unit** (isi URL gambar sendiri saat tambah/edit kendaraan, dengan fallback ke foto generic per tipe jika belum diisi), serta **riwayat pemakaian** yang menampilkan jarak tempuh dan BBM terpakai per trip.
 - **Manajemen Driver** — CRUD lengkap, pencarian, peringatan otomatis jika masa berlaku SIM sudah/akan habis dalam 30 hari, serta **riwayat pemakaian per driver** (daftar booking yang pernah menggunakan driver tersebut, lengkap kendaraan dan status).
 - **Pemesanan Kendaraan**
@@ -64,7 +67,7 @@ Aplikasi pemesanan kendaraan perusahaan (tambang nikel) untuk memonitor kendaraa
 - **Persetujuan Berjenjang (2 Level)** — approver Level 1 menyetujui/menolak terlebih dahulu, baru approver Level 2 bisa bertindak.
 - **Dashboard** — ringkasan total kendaraan, total pemesanan, tren 7 hari terakhir, distribusi kepemilikan armada, ketersediaan armada, dan pengingat jadwal service.
 - **Export Laporan Excel** — laporan pemesanan periodik (bisa difilter rentang tanggal) diunduh dalam format `.xlsx`, termasuk kolom odometer awal/akhir, jarak tempuh, BBM terisi, dan catatan selesai untuk pemesanan yang sudah rampung.
-- **Log Aktivitas** — setiap aksi penting (login, buat/ubah/hapus kendaraan & driver, buat/ubah/hapus/selesaikan/approve/reject pemesanan) tercatat di tabel `activity_logs`.
+- **Log Aktivitas** — setiap aksi penting (login, ganti password, buat/ubah/hapus user & kendaraan & driver, buat/ubah/hapus/selesaikan/approve/reject pemesanan) tercatat otomatis di tabel `activity_logs` dan dapat ditinjau kapan saja melalui halaman Riwayat Aktivitas.
 
 ---
 
@@ -74,8 +77,9 @@ Aplikasi pemesanan kendaraan perusahaan (tambang nikel) untuk memonitor kendaraa
 vehicle-booking-system/
 ├── vehicle-booking/            # Backend — CodeIgniter 4
 │   ├── app/
-│   │   ├── Controllers/        # Auth, Users, Vehicles, Drivers, Bookings, Approvals, Reports
-│   │   ├── Models/              # UsersModel, VehiclesModel, DriversModel, FuelLogsModel, dll.
+│   │   ├── Controllers/        # Auth, Users, Vehicles, Drivers, Bookings, Approvals, Reports, ActivityLogs
+│   │   ├── Models/              # UsersModel, VehiclesModel, DriversModel, FuelLogsModel, ActivityLogsModel, dll.
+│   │   ├── Libraries/            # ActivityLogger
 │   │   ├── Database/Migrations/
 │   │   ├── Filters/             # CorsFilter
 │   │   └── Config/Routes.php
@@ -84,7 +88,7 @@ vehicle-booking-system/
 └── vehicle-booking-frontend/   # Frontend — Angular
     └── src/app/
         ├── core/                # Auth, Api service, auth guard
-        ├── layout/main-layout/  # Sidebar & shell utama
+        ├── layout/main-layout/  # Sidebar, shell utama, & modal Ganti Password
         └── pages/
             ├── login/
             ├── dashboard/
@@ -92,6 +96,8 @@ vehicle-booking-system/
             ├── drivers/
             ├── bookings/
             ├── calendar/
+            ├── users/
+            ├── activity-logs/
             └── approvals/
 ```
 
@@ -119,7 +125,8 @@ composer install
 php spark migrate
 
 # (Jika belum ada user admin/approver, insert manual ke tabel `users`
-#  dengan password yang di-hash pakai password_hash() PHP)
+#  dengan password yang di-hash pakai password_hash() PHP — atau tambahkan
+#  lewat halaman "Kelola User" setelah login dengan akun admin pertama)
 
 # Jalankan server backend
 php spark serve
@@ -155,7 +162,9 @@ Frontend akan berjalan di `http://localhost:4200`.
 | `spv_tambang1` | *(sesuaikan dengan yang di-set di database)* | Approver | Level 1 |
 | `manager_hq` | *(sesuaikan dengan yang di-set di database)* | Approver | Level 2 |
 
-> Password approver di atas dibuat manual saat seeding awal database dan di-hash dengan `password_hash()`. Jika lupa, reset via query:
+> Password approver di atas dibuat manual saat seeding awal database dan di-hash dengan `password_hash()`. Setelah login pertama kali, setiap user (termasuk approver) disarankan segera mengganti password melalui menu **Ganti Password** pada dropdown kartu profil di sidebar.
+>
+> Jika lupa password dan tidak bisa login sama sekali, reset via query:
 > ```sql
 > UPDATE users SET password = '<hasil password_hash()>' WHERE username = 'spv_tambang1';
 > ```
@@ -168,7 +177,7 @@ Frontend akan berjalan di `http://localhost:4200`.
 
 ## 📖 Alur Bisnis / Panduan Penggunaan
 
-Sistem punya 2 peran: **Admin** (membuat pemesanan) dan **Approver** (menyetujui, terbagi 2 level).
+Sistem punya 2 peran: **Admin** (mengelola master data & pemesanan) dan **Approver** (menyetujui, terbagi 2 level).
 
 ### Alur satu siklus pemesanan kendaraan
 
@@ -218,6 +227,9 @@ Sistem punya 2 peran: **Admin** (membuat pemesanan) dan **Approver** (menyetujui
 | **Pemesanan** | Riwayat semua pemesanan, edit/hapus/tandai selesai, export Excel | Lihat: semua role. Kelola: **Admin** |
 | **Kalender** | Visual jadwal pemakaian seluruh kendaraan per minggu (Gantt chart) | Semua role |
 | **Approval** | Daftar pemesanan yang perlu disetujui user yang login | Hanya tampil untuk role **Approver** |
+| **Kelola User** | Tambah/edit/hapus akun, atur role & level approval | Hanya **Admin** |
+| **Riwayat Aktivitas** | Jejak seluruh aktivitas penting sistem, pencarian & filter aksi/tanggal | Hanya **Admin** |
+| **Ganti Password** | Ubah password akun sendiri (via dropdown kartu profil di sidebar) | Semua role |
 
 ### Contoh Uji Coba Alur Lengkap
 
@@ -230,10 +242,25 @@ Sistem punya 2 peran: **Admin** (membuat pemesanan) dan **Approver** (menyetujui
 7. Buka halaman **Kendaraan**, klik **Status Kendaraan** pada kendaraan yang baru dipakai — jarak tempuh dan BBM yang dicatat akan tampil di riwayatnya.
 8. Buka halaman **Driver**, klik **Riwayat** pada driver yang tadi dipakai — pemesanan yang baru saja diselesaikan akan tampil di riwayatnya.
 9. Buka halaman **Kalender**, lihat bar pemesanan tadi muncul pada baris kendaraan yang bersangkutan sesuai rentang tanggalnya.
+10. Sebagai `admin`, buka halaman **Kelola User** → tambah 1 akun approver baru (isi nama, username, password, pilih level) → akun tersebut langsung bisa dipakai login.
+11. Klik kartu profil di pojok bawah sidebar → pilih **Ganti Password** → masukkan password lama dan password baru untuk mengubah kredensial akun yang sedang login.
+12. Buka halaman **Riwayat Aktivitas** → seluruh langkah di atas (login, buat booking, approve, tandai selesai, tambah user, ganti password) akan muncul sebagai baris log lengkap dengan pelaku dan waktunya. Coba gunakan filter jenis aksi atau rentang tanggal untuk mempersempit tampilan.
 
 ### Menambahkan Foto Kendaraan
 
 Di halaman **Kendaraan**, saat menambah atau mengedit data, isi field **URL Foto Kendaraan** dengan link gambar yang sudah ter-hosting online (misalnya dari Unsplash atau Pinterest — klik kanan gambar → *Copy image address*, pastikan link mengarah langsung ke file gambar, bukan ke halaman web). Jika dikosongkan, sistem akan menampilkan foto generic berdasarkan tipe kendaraan (angkutan orang/barang) sebagai fallback. Foto ini akan otomatis ikut tampil di kartu kendaraan maupun tabel dan detail pemesanan.
+
+### Mengelola User & Approver
+
+Hanya **Admin** yang dapat mengakses halaman **Kelola User**. Saat menambah user baru:
+- **Role `admin`** — tidak memerlukan level approval.
+- **Role `approver`** — wajib memilih **Level 1** atau **Level 2**, menentukan approver tersebut muncul di tahap persetujuan pertama atau kedua pada alur pemesanan.
+
+Saat mengedit user, field password dapat dikosongkan jika tidak ingin mengubah password akun tersebut (password lama tetap dipertahankan).
+
+### Meninjau Riwayat Aktivitas
+
+Halaman **Riwayat Aktivitas** (khusus Admin) menampilkan seluruh baris log dari tabel `activity_logs`, terurut dari yang terbaru, lengkap dengan nama pelaku, jenis aksi (berwarna sesuai kategori — hijau untuk aksi tambah/setujui, biru untuk ubah, merah untuk hapus/tolak), deskripsi detail, waktu kejadian, dan alamat IP. Gunakan kolom pencarian untuk mencari berdasarkan nama user/deskripsi, atau dropdown filter jenis aksi dan rentang tanggal untuk mempersempit hasil. Baris dengan pelaku "Sistem" menandakan aksi yang tercatat tanpa konteks user yang login (umumnya dari controller yang belum menyertakan `user_id` saat memanggil `ActivityLogger`).
 
 ### Export Laporan
 
@@ -254,7 +281,7 @@ Tabel utama:
 | `booking_approvals` | Baris persetujuan per level per pemesanan (status, notes, approved_at) |
 | `fuel_logs` | Catatan odometer awal/akhir, BBM terisi, dan catatan per pemesanan yang telah selesai |
 | `vehicle_service_schedule` | Jadwal service kendaraan |
-| `activity_logs` | Log aktivitas sistem |
+| `activity_logs` | Log aktivitas sistem (`user_id`, `action`, `description`, `ip_address`, `created_at`) — diisi otomatis lewat `ActivityLogger::log()` di setiap controller |
 
 > Physical Data Model (ERD) dan Activity Diagram dilampirkan terpisah sebagai bagian dari dokumentasi submission.
 
@@ -268,7 +295,12 @@ Base URL: `http://localhost:8080/api`
 |---|---|---|
 | POST | `/login` | Login user |
 | POST | `/logout` | Logout user |
-| GET | `/users?role=approver` | Daftar user approver |
+| POST | `/auth/change-password` | Ubah password akun sendiri. Body: `user_id`, `old_password`, `new_password` (verifikasi password lama wajib) |
+| GET | `/users?role=approver` | Daftar user approver (dipakai saat memilih approver Level 1/2 pada form pemesanan) |
+| GET | `/users` | Daftar seluruh user (untuk halaman Kelola User) |
+| POST | `/users` | Tambah user baru — Body: `name`, `username`, `password`, `role`, `level` (khusus role `approver`) |
+| PUT | `/users/{id}` | Update user — `password` opsional, dikosongkan jika tidak ingin diubah |
+| DELETE | `/users/{id}` | Hapus user |
 | GET | `/vehicles` | Daftar kendaraan |
 | POST | `/vehicles` | Tambah kendaraan (dapat menyertakan `image_url`) |
 | PUT | `/vehicles/{id}` | Update kendaraan (dapat menyertakan `image_url`) |
@@ -288,6 +320,7 @@ Base URL: `http://localhost:8080/api`
 | POST | `/approvals/{id}/approve` | Menyetujui pemesanan |
 | POST | `/approvals/{id}/reject` | Menolak pemesanan (menyertakan `notes` alasan) |
 | GET | `/reports/bookings/export` | Export laporan pemesanan ke Excel (parameter opsional `start` & `end`), termasuk kolom odometer, jarak tempuh, BBM, dan catatan selesai |
+| GET | `/activity-logs` | Daftar seluruh log aktivitas, terurut terbaru (parameter opsional `action`, `start`, `end`) |
 
 ---
 
@@ -302,10 +335,10 @@ Fitur yang direncanakan untuk pengembangan selanjutnya:
 - [x] Log BBM & odometer per pemakaian kendaraan
 - [x] Foto kendaraan custom per unit (bukan hanya generic per tipe)
 - [x] Kalender visual pemakaian kendaraan (Gantt chart mingguan)
+- [x] Halaman kelola User/Approver dari UI
+- [x] Ganti password mandiri untuk setiap user
+- [x] Riwayat aktivitas (activity log) yang dapat dilihat di UI
 - [ ] Riwayat service kendaraan (bukan hanya jadwal berikutnya)
-- [ ] Halaman kelola User/Approver dari UI
-- [ ] Ganti password mandiri untuk setiap user
-- [ ] Riwayat aktivitas (activity log) yang dapat dilihat di UI
 - [ ] Notifikasi in-app
 - [ ] Optimasi tampilan mobile / PWA
 
@@ -331,6 +364,9 @@ Periksa apakah method controller terkait melakukan `JOIN` ke tabel relasi (`vehi
 **Data berhasil dikirim dari frontend tapi tidak tersimpan di database (tanpa error)**
 Periksa properti `$allowedFields` pada Model terkait. CodeIgniter secara diam-diam akan membuang kolom yang tidak terdaftar di `$allowedFields` saat `insert()`/`update()` dipanggil — tidak ada error yang muncul, datanya hanya tidak masuk.
 
+**`Cannot find module './pages/nama-halaman/nama-halaman'` saat build Angular**
+Route sudah didaftarkan di `app.routes.ts`, tapi file komponennya (`.ts`/`.html`/`.css`) belum dibuat di folder yang sesuai, atau nama path pada `loadComponent()` tidak sama persis dengan nama folder/file (termasuk kesalahan tulis tunggal/jamak, mis. `activity-log` vs `activity-logs`). Buat folder dan file komponennya terlebih dahulu (bisa lewat `New-Item` di PowerShell atau `ng generate component`), lalu pastikan path pada route cocok persis.
+
 **Frontend menampilkan "Cannot GET"**
 Biasanya karena SSR mencoba mengakses `localStorage` di sisi server. Pastikan pengecekan `isPlatformBrowser` digunakan sebelum memanggil Web API browser di service Angular (`Auth`).
 
@@ -351,6 +387,12 @@ Booking yang bersangkutan belum berstatus `approved_l2` (belum disetujui kedua l
 
 **URL foto kendaraan tidak muncul / broken image**
 Pastikan URL yang diisi mengarah **langsung ke file gambar**, bukan ke halaman web. Untuk Pinterest, gunakan *Copy image address* pada gambar yang sudah diperbesar (biasanya berformat `https://i.pinimg.com/...`), bukan link pin (`pinterest.com/pin/...`). Tes dengan membuka URL tersebut di tab baru — jika yang muncul hanya gambar (bukan tampilan situs penuh), URL tersebut valid digunakan.
+
+**Ganti password gagal dengan pesan "Password lama tidak sesuai"**
+Pastikan password lama yang diinput benar-benar sama dengan password yang sedang aktif saat ini (bukan password default jika sudah pernah diganti sebelumnya). Password baru minimal 6 karakter.
+
+**Kolom "pelaku" pada Riwayat Aktivitas menampilkan "Sistem" untuk beberapa baris**
+Terjadi jika controller terkait memanggil `ActivityLogger::log(null, ...)` alih-alih menyertakan ID user yang sedang login (umumnya pada operasi yang belum mengirim ulang identitas user dari frontend, seperti pada beberapa aksi kendaraan/driver). Ini bukan bug fatal — log tetap tercatat, hanya kolom pelakunya kosong. Untuk melengkapi, sertakan `user_id` yang relevan pada pemanggilan `ActivityLogger::log()` di controller terkait.
 
 **Server backend mati sendiri**
 `php spark serve` berjalan di foreground — jangan tutup terminal tempat command ini dijalankan, dan jangan pakai terminal yang sama untuk command lain.

@@ -44,6 +44,22 @@ export class Api {
     return this.http.get<any>(`${this.base}/users?role=approver`);
   }
 
+  getAllUsers() {
+    return this.http.get<any>(`${this.base}/users`);
+  }
+
+  createUser(payload: any) {
+    return this.http.post<any>(`${this.base}/users`, payload);
+  }
+
+  updateUser(id: number, payload: any) {
+    return this.http.put<any>(`${this.base}/users/${id}`, payload);
+  }
+
+  deleteUser(id: number) {
+    return this.http.delete<any>(`${this.base}/users/${id}`);
+  }
+
   getBookings() {
     return this.http.get<any>(`${this.base}/bookings`);
   }
@@ -92,5 +108,23 @@ export class Api {
     if (params.length) url += `?${params.join('&')}`;
 
     return this.http.get(url, { responseType: 'blob' });
+  }
+
+  changePassword(userId: string, oldPassword: string, newPassword: string) {
+    return this.http.post<any>(`${this.base}/auth/change-password`, {
+      user_id: userId,
+      old_password: oldPassword,
+      new_password: newPassword,
+    });
+  }
+
+  getActivityLogs(params?: { action?: string; start?: string; end?: string }) {
+    let url = `${this.base}/activity-logs`;
+    const query: string[] = [];
+    if (params?.action) query.push(`action=${params.action}`);
+    if (params?.start) query.push(`start=${params.start}`);
+    if (params?.end) query.push(`end=${params.end}`);
+    if (query.length) url += `?${query.join('&')}`;
+    return this.http.get<any>(url);
   }
 }

@@ -96,6 +96,36 @@
             </span>
           </a>
         }
+
+        @if (auth.isAdmin()) {
+          <a routerLink="/users" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </span>
+            <span class="nav-label">User</span>
+            <span class="nav-chevron">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+            </span>
+          </a>
+
+          <a routerLink="/activity-logs" routerLinkActive="active" class="nav-item">
+            <span class="nav-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 8v4l3 3"></path>
+                <circle cx="12" cy="12" r="9"></circle>
+              </svg>
+            </span>
+            <span class="nav-label">Riwayat Aktivitas</span>
+            <span class="nav-chevron">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+            </span>
+          </a>
+        }
       </nav>
     </div>
 
@@ -186,21 +216,65 @@
         <span class="user-name">{{ auth.currentUser()?.name }}</span>
         <span class="user-role">{{ auth.currentUser()?.role }}</span>
       </div>
-      <svg class="dropdown-chevron" [class.open]="userMenuOpen()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M6 9l6 6 6-6"></path>
-      </svg>
+      <svg class="dropdown-chevron" [class.open]="userMenuOpen()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
 
       @if (userMenuOpen()) {
-        <button class="logout-item" (click)="auth.logout(); $event.stopPropagation()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-            <path d="M16 17l5-5-5-5"></path>
-            <path d="M21 12H9"></path>
-          </svg>
-          Logout
-        </button>
+        <div class="user-dropdown">
+          <button class="dropdown-item" (click)="openPasswordModal(); $event.stopPropagation()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15">
+              <rect x="5" y="11" width="14" height="9" rx="2"></rect>
+              <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
+            </svg>
+            Ganti Password
+          </button>
+          <button class="dropdown-item logout-item" (click)="auth.logout(); $event.stopPropagation()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <path d="M16 17l5-5-5-5"></path>
+              <path d="M21 12H9"></path>
+            </svg>
+            Logout
+          </button>
+        </div>
       }
     </div>
+
+    @if (showPasswordModal()) {
+      <div class="pw-modal-overlay" (click)="closePasswordModal()">
+        <div class="pw-modal-card" (click)="$event.stopPropagation()">
+          <h3 class="pw-modal-title">Ganti Password</h3>
+
+          <div class="pw-field">
+            <label>Password Lama</label>
+            <input type="password" [(ngModel)]="oldPassword" placeholder="Masukkan password saat ini">
+          </div>
+
+          <div class="pw-field">
+            <label>Password Baru</label>
+            <input type="password" [(ngModel)]="newPassword" placeholder="Minimal 6 karakter">
+          </div>
+
+          <div class="pw-field">
+            <label>Konfirmasi Password Baru</label>
+            <input type="password" [(ngModel)]="confirmPassword" placeholder="Ulangi password baru">
+          </div>
+
+          @if (passwordError()) {
+            <p class="pw-error">{{ passwordError() }}</p>
+          }
+          @if (passwordSuccess()) {
+            <p class="pw-success">{{ passwordSuccess() }}</p>
+          }
+
+          <div class="pw-modal-actions">
+            <button class="pw-btn-submit" (click)="submitPasswordChange()" [disabled]="changingPassword()">
+              {{ changingPassword() ? 'Menyimpan...' : 'Simpan Password' }}
+            </button>
+            <button class="pw-btn-cancel" (click)="closePasswordModal()">Batal</button>
+          </div>
+        </div>
+      </div>
+    }
   </aside>
 
   <main class="page-body">

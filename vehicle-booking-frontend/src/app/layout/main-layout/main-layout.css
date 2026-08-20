@@ -375,27 +375,149 @@
   transform: rotate(180deg);
 }
 
-.logout-item {
+/* --- Dropdown User & Logout Baru --- */
+.user-dropdown {
   position: absolute;
   bottom: calc(100% + 8px);
   left: 0;
   right: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 14px;
   background: #143d2c;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  color: #fca5a5;
+  overflow: hidden;
+  z-index: 30;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 14px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
   font-family: 'Baloo 2', sans-serif;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+  text-align: left;
 }
 
-.logout-item:hover {
-  background: #1a4a36;
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dropdown-item.logout-item {
+  color: #fca5a5;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Modal ganti password */
+.pw-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.pw-modal-card {
+  background: white;
+  border-radius: 20px;
+  padding: 28px;
+  width: 100%;
+  max-width: 380px;
+  font-family: 'Baloo 2', sans-serif;
+}
+
+.pw-modal-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 20px 0;
+}
+
+.pw-field {
+  margin-bottom: 16px;
+}
+
+.pw-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.pw-field input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid #d9e2dc;
+  border-radius: 12px;
+  font-family: 'Baloo 2', sans-serif;
+  font-size: 14px;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.pw-field input:focus {
+  border-color: #16a34a;
+}
+
+.pw-error {
+  color: #dc2626;
+  font-size: 13px;
+  margin: 0 0 14px 0;
+}
+
+.pw-success {
+  color: #15803d;
+  font-size: 13px;
+  margin: 0 0 14px 0;
+}
+
+.pw-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.pw-btn-submit {
+  flex: 1;
+  padding: 11px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  font-family: 'Baloo 2', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pw-btn-submit:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.pw-btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pw-btn-cancel {
+  padding: 11px 20px;
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  border-radius: 999px;
+  font-family: 'Baloo 2', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 /* Area konten */

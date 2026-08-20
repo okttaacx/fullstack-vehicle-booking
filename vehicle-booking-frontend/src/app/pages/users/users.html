@@ -1,0 +1,121 @@
+<div class="usr">
+  <div class="usr-header">
+    <div>
+      <h1 class="usr-title">Kelola User & Approver</h1>
+      <p class="usr-sub">Kelola akun admin dan approver dalam sistem</p>
+    </div>
+
+    <div class="header-actions">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="15" height="15"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+        <input type="text" [(ngModel)]="searchTerm" placeholder="Cari user...">
+      </div>
+
+      <button class="btn-primary" (click)="openCreateForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="16" height="16"><path d="M12 5v14M5 12h14"></path></svg>
+        Tambah User
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <p>Memuat data...</p>
+  } @else if (errorMsg()) {
+    <p class="error-text">{{ errorMsg() }}</p>
+  } @else {
+    <div class="usr-grid">
+      @for (u of filteredUsers(); track u.id) {
+        <div class="usr-card">
+          <div class="usr-card-top">
+            <span class="avatar">{{ initials(u.name) }}</span>
+            <span class="badge" [class.badge-blue]="u.role === 'admin'" [class.badge-green]="u.role === 'approver'">
+              {{ roleLabel(u.role) }}
+              @if (u.role === 'approver' && u.level) {
+                &middot; Level {{ u.level }}
+              }
+            </span>
+          </div>
+
+          <h3 class="usr-name">{{ u.name }}</h3>
+          <p class="usr-username">&#64;{{ u.username }}</p>
+
+          @if (deletingId() === u.id) {
+            <div class="confirm-block">
+              <span class="confirm-text">Yakin hapus user ini?</span>
+              @if (deleteError()) {
+                <p class="error-text">{{ deleteError() }}</p>
+              }
+              <div class="confirm-btns">
+                <button class="btn-mini btn-danger" (click)="doDelete(u.id)">Ya, Hapus</button>
+                <button class="btn-mini btn-ghost" (click)="cancelDelete()">Batal</button>
+              </div>
+            </div>
+          } @else {
+            <div class="usr-actions">
+              <button class="btn-outline" (click)="openEditForm(u)">Edit</button>
+              <button class="btn-danger-outline" (click)="confirmDelete(u.id)">Hapus</button>
+            </div>
+          }
+        </div>
+      } @empty {
+        <div class="empty-state">
+          <p>Belum ada data user</p>
+        </div>
+      }
+    </div>
+  }
+
+  @if (showForm()) {
+    <div class="modal-overlay" (click)="cancelForm()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">{{ editingId ? 'Edit User' : 'Tambah User Baru' }}</h3>
+
+        <div class="form-grid">
+          <div class="field">
+            <label>Nama Lengkap *</label>
+            <input type="text" [(ngModel)]="name" placeholder="Contoh: Budi Santoso">
+          </div>
+
+          <div class="field">
+            <label>Username *</label>
+            <input type="text" [(ngModel)]="username" placeholder="Contoh: budi_spv">
+          </div>
+
+          <div class="field">
+            <label>Password {{ editingId ? '(kosongkan jika tidak diubah)' : '*' }}</label>
+            <input type="password" [(ngModel)]="password" placeholder="Minimal 6 karakter">
+          </div>
+
+          <div class="field">
+            <label>Role *</label>
+            <select [(ngModel)]="role">
+              <option value="approver">Approver</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          @if (role === 'approver') {
+            <div class="field">
+              <label>Level Approval *</label>
+              <select [(ngModel)]="level">
+                <option value="1">Level 1</option>
+                <option value="2">Level 2</option>
+              </select>
+            </div>
+          }
+        </div>
+
+        @if (formError()) {
+          <p class="error-text form-error">{{ formError() }}</p>
+        }
+
+        <div class="modal-actions">
+          <button class="btn-primary" (click)="submitUser()" [disabled]="submitting()">
+            {{ submitting() ? 'Menyimpan...' : 'Simpan' }}
+          </button>
+          <button class="btn-ghost-lg" (click)="cancelForm()">Batal</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

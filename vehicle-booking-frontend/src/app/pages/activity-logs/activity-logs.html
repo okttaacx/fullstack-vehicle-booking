@@ -1,0 +1,61 @@
+<div class="log">
+  <div class="log-header">
+    <div>
+      <h1 class="log-title">Riwayat Aktivitas</h1>
+      <p class="log-sub">Pantau seluruh aktivitas penting yang terjadi di sistem</p>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="15" height="15"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+      <input type="text" [(ngModel)]="searchTerm" placeholder="Cari user, aksi, atau deskripsi...">
+    </div>
+
+    <div class="filter-row">
+      <select [(ngModel)]="filterAction" (ngModelChange)="applyFilter()">
+        <option value="">Semua Aksi</option>
+        @for (a of uniqueActions(); track a) {
+          <option [value]="a">{{ actionLabel(a) }}</option>
+        }
+      </select>
+
+      <input type="date" [(ngModel)]="filterStart" (change)="applyFilter()" title="Dari tanggal">
+      <span class="date-sep">—</span>
+      <input type="date" [(ngModel)]="filterEnd" (change)="applyFilter()" title="Sampai tanggal">
+
+      <button class="btn-clear" (click)="clearFilter()">Reset</button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <p>Memuat data...</p>
+  } @else if (errorMsg()) {
+    <p class="error-text">{{ errorMsg() }}</p>
+  } @else {
+    <div class="log-list">
+      @for (l of filteredLogs(); track l.id) {
+        <div class="log-row">
+          <span class="log-avatar" [title]="l.user_name || 'Sistem'">{{ initials(l.user_name) }}</span>
+
+          <div class="log-main">
+            <div class="log-top">
+              <span class="log-user">{{ l.user_name || 'Sistem' }}</span>
+              <span class="badge" [class]="actionClass(l.action)">{{ actionLabel(l.action) }}</span>
+            </div>
+            <p class="log-desc">{{ l.description }}</p>
+          </div>
+
+          <div class="log-meta">
+            <span class="log-date">{{ l.created_at | date: 'dd MMM yyyy, HH:mm' }}</span>
+            <span class="log-ip">{{ l.ip_address }}</span>
+          </div>
+        </div>
+      } @empty {
+        <div class="empty-state">
+          <p>Tidak ada aktivitas yang cocok dengan pencarian/filter</p>
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -16,6 +16,8 @@ export const routes: Routes = [
       { path: 'approvals', loadComponent: () => import('./pages/approvals/approvals').then(m => m.Approvals) },
       { path: 'drivers', loadComponent: () => import('./pages/drivers/drivers').then(m => m.Drivers) },
       { path: 'calendar', loadComponent: () => import('./pages/calendar/calendar').then(m => m.Calendar) },
+      { path: 'users', loadComponent: () => import('./pages/users/users').then(m => m.Users) },
+      { path: 'activity-logs', loadComponent: () => import('./pages/activity-logs/activity-logs').then(m => m.ActivityLogs) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },

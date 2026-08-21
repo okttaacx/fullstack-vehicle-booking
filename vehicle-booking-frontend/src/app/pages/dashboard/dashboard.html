@@ -231,8 +231,8 @@
                 <span class="list-sub">{{ v.license_plate }}</span>
               </div>
 
-              <span class="badge" [class]="daysUntil(v.service_schedule) < 0 ? 'badge-red' : 'badge-amber'">
-                {{ daysUntil(v.service_schedule) < 0 ? 'Lewat jadwal' : (daysUntil(v.service_schedule) + ' hari lagi') }}
+              <span class="badge" [class]="daysUntil(v.service_date) < 0 ? 'badge-red' : 'badge-amber'">
+                {{ daysUntil(v.service_date) < 0 ? 'Lewat jadwal' : (daysUntil(v.service_date) + ' hari lagi') }}
               </span>
             </div>
           } @empty {

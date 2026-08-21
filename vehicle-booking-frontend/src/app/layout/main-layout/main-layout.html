@@ -10,6 +10,21 @@
         <span class="online-dot"></span>
       </div>
 
+      <!-- WRAPPER NOTIFIKASI MULAI -->
+      <div class="notif-wrap">
+        <button #notifBellBtn class="notif-bell" (click)="toggleNotif(); $event.stopPropagation()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span class="notif-label">Notifikasi</span>
+          @if (notifCount() > 0) {
+            <span class="notif-badge">{{ notifCount() > 9 ? '9+' : notifCount() }}</span>
+          }
+        </button>
+      </div>
+      <!-- WRAPPER NOTIFIKASI SELESAI -->
+
       <div class="divider"></div>
 
       <nav class="nav">
@@ -280,4 +295,39 @@
   <main class="page-body">
     <router-outlet></router-outlet>
   </main>
+
+  <!-- BLOK NOTIFIKASI DROPDOWN (Posisinya Fixed di luar sidebar) -->
+  @if (notifOpen()) {
+    <div class="notif-backdrop" (click)="closeNotif()"></div>
+    <div
+      class="notif-dropdown notif-dropdown-floating"
+      [style.top.px]="notifPosition().top"
+      [style.left.px]="notifPosition().left"
+      [style.width.px]="notifPosition().width"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="notif-header">Notifikasi</div>
+      <div class="notif-list">
+        @for (n of notifItems(); track n.id) {
+          <a class="notif-item" [routerLink]="n.link" (click)="closeNotif()">
+            <span class="notif-icon" [class]="'notif-icon-' + n.icon">
+              @if (n.icon === 'approval') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M20 6L9 17l-5-5"></path></svg>
+              } @else if (n.icon === 'ready') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+              }
+            </span>
+            <div class="notif-item-text">
+              <span class="notif-item-title">{{ n.title }}</span>
+              <span class="notif-item-sub">{{ n.subtitle }}</span>
+            </div>
+          </a>
+        } @empty {
+          <p class="notif-empty">Tidak ada notifikasi baru</p>
+        }
+      </div>
+    </div>
+  }
 </div>

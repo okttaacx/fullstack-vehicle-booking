@@ -43,7 +43,25 @@ export class Vehicles implements OnInit {
   copiedId = signal<number | null>(null);
 
   detailVehicle = signal<any | null>(null);
+  detailNextService = signal<any | null>(null);
   statusVehicle = signal<any | null>(null);
+  nextServiceMap = signal<Record<number, any>>({});
+
+  // ---- Riwayat Service ----
+  serviceVehicle = signal<any | null>(null);
+  serviceLogs = signal<any[]>([]);
+  serviceLoading = signal(false);
+
+  showServiceForm = signal(false);
+  editingServiceId: number | null = null;
+  serviceSubmitting = signal(false);
+  serviceFormError = signal('');
+
+  serviceDate = '';
+  serviceDescription = '';
+  serviceStatus = 'scheduled';
+
+  deletingServiceId = signal<number | null>(null);
 
   filteredVehicles = computed(() => {
     let list = this.vehicles();
@@ -67,7 +85,6 @@ export class Vehicles implements OnInit {
     return list;
   });
 
-  // Tambahan baru untuk stat card
   ownedCount = computed(() => this.vehicles().filter(v => v.ownership === 'milik_perusahaan').length);
   rentedCount = computed(() => this.vehicles().filter(v => v.ownership === 'sewa').length);
 
@@ -76,6 +93,7 @@ export class Vehicles implements OnInit {
     this.api.getBookings().subscribe({
       next: (res) => this.bookings.set(res.data ?? []),
     });
+    this.loadNextServiceMap();
   }
 
   loadVehicles() {
@@ -91,6 +109,31 @@ export class Vehicles implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  loadNextServiceMap() {
+    this.api.getUpcomingVehicleServices().subscribe({
+      next: (res) => {
+        const records = res.data ?? [];
+        const map: Record<number, any> = {};
+        
+        // Data sudah terurut ASC by service_date dari backend,
+        // jadi entri pertama yang ketemu per vehicle_id itu yang terdekat.
+        for (const r of records) {
+          const vId = Number(r.vehicle_id);
+          if (!map[vId]) {
+            map[vId] = r;
+          }
+        }
+
+        this.nextServiceMap.set(map);
+      },
+      error: () => {},
+    });
+  }
+
+  nextServiceFor(vehicleId: number): any {
+    return this.nextServiceMap()[vehicleId] ?? null;
   }
 
   vehicleImage(v: any): string {
@@ -129,11 +172,27 @@ export class Vehicles implements OnInit {
 
   openDetail(v: any) {
     this.detailVehicle.set(v);
+    this.detailNextService.set(null);
     this.closeMenu();
+
+    this.api.getVehicleServices(v.id).subscribe({
+      next: (res) => {
+        const records = res.data ?? [];
+        const upcoming = records
+          .filter((r: any) => r.status === 'scheduled')
+          .sort(
+            (a: any, b: any) =>
+              new Date(a.service_date).getTime() - new Date(b.service_date).getTime()
+          );
+        this.detailNextService.set(upcoming[0] ?? null);
+      },
+      error: () => {},
+    });
   }
 
   closeDetail() {
     this.detailVehicle.set(null);
+    this.detailNextService.set(null);
   }
 
   openStatus(v: any) {
@@ -281,6 +340,140 @@ export class Vehicles implements OnInit {
       rejected: 'badge-red',
     };
 
+    return map[status] ?? '';
+  }
+
+  // ---- Riwayat Service ----
+
+  openServiceHistory(v: any) {
+    this.serviceVehicle.set(v);
+    this.closeMenu();
+    this.loadServiceLogs(v.id);
+  }
+
+  closeServiceHistory() {
+    this.serviceVehicle.set(null);
+    this.serviceLogs.set([]);
+    this.cancelServiceForm();
+  }
+
+  loadServiceLogs(vehicleId: number) {
+    this.serviceLoading.set(true);
+    this.api.getVehicleServices(vehicleId).subscribe({
+      next: (res) => {
+        this.serviceLogs.set(res.data ?? []);
+        this.serviceLoading.set(false);
+      },
+      error: () => {
+        this.serviceLoading.set(false);
+      },
+    });
+  }
+
+  openServiceCreateForm() {
+    this.editingServiceId = null;
+    this.serviceDate = '';
+    this.serviceDescription = '';
+    this.serviceStatus = 'scheduled';
+    this.serviceFormError.set('');
+    this.showServiceForm.set(true);
+  }
+
+  openServiceEditForm(s: any) {
+    this.editingServiceId = s.id;
+    this.serviceDate = s.service_date;
+    this.serviceDescription = s.description ?? '';
+    this.serviceStatus = s.status;
+    this.serviceFormError.set('');
+    this.showServiceForm.set(true);
+  }
+
+  cancelServiceForm() {
+    this.showServiceForm.set(false);
+    this.editingServiceId = null;
+  }
+
+  submitServiceLog() {
+    this.serviceFormError.set('');
+
+    if (!this.serviceDate) {
+      this.serviceFormError.set('Tanggal service wajib diisi');
+      return;
+    }
+
+    this.serviceSubmitting.set(true);
+    const vehicleId = this.serviceVehicle().id;
+
+    const payload = {
+      vehicle_id: vehicleId,
+      service_date: this.serviceDate,
+      description: this.serviceDescription || null,
+      status: this.serviceStatus,
+    };
+
+    const request = this.editingServiceId
+      ? this.api.updateVehicleService(this.editingServiceId, payload)
+      : this.api.createVehicleService(payload);
+
+    request.subscribe({
+      next: () => {
+        this.serviceSubmitting.set(false);
+        this.cancelServiceForm();
+        this.loadServiceLogs(vehicleId);
+        this.loadNextServiceMap(); // Refresh jadwal utama
+      },
+      error: (err) => {
+        this.serviceFormError.set(
+          err?.error?.messages?.error ?? 'Gagal menyimpan catatan service'
+        );
+        this.serviceSubmitting.set(false);
+      },
+    });
+  }
+
+  markServiceDone(s: any) {
+    this.api.updateVehicleService(s.id, { status: 'done' }).subscribe({
+      next: () => {
+        this.loadServiceLogs(this.serviceVehicle().id);
+        this.loadNextServiceMap(); // Refresh jadwal utama
+      }
+    });
+  }
+
+  confirmDeleteService(id: number) {
+    this.deletingServiceId.set(id);
+  }
+
+  cancelDeleteService() {
+    this.deletingServiceId.set(null);
+  }
+
+  doDeleteService(id: number) {
+    const vehicleId = this.serviceVehicle().id;
+    this.api.deleteVehicleService(id).subscribe({
+      next: () => {
+        this.deletingServiceId.set(null);
+        this.loadServiceLogs(vehicleId);
+        this.loadNextServiceMap(); // Refresh jadwal utama
+      },
+    });
+  }
+
+  serviceStatusLabel(status: string): string {
+    const map: Record<string, string> = {
+      scheduled: 'Terjadwal',
+      done: 'Selesai',
+      cancelled: 'Dibatalkan',
+    };
+    return map[status] ?? status;
+  }
+
+  serviceStatusClass(status: string): string {
+    const map: Record<string, string> = {
+      scheduled: 'badge-amber',
+      done: 'badge-green',
+      cancelled: 'badge-red',
+    };
     return map[status] ?? '';
   }
 }

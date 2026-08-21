@@ -127,4 +127,26 @@ export class Api {
     if (query.length) url += `?${query.join('&')}`;
     return this.http.get<any>(url);
   }
+
+  // --- Mulai dari sini tambahan API untuk Vehicle Services ---
+  
+  getUpcomingVehicleServices() {
+    return this.http.get<any>(`${this.base}/vehicle-services/upcoming`);
+  }
+
+  getVehicleServices(vehicleId: number) {
+    return this.http.get<any>(`${this.base}/vehicles/${vehicleId}/services`);
+  }
+
+  createVehicleService(payload: any) {
+    return this.http.post<any>(`${this.base}/vehicle-services`, payload);
+  }
+
+  updateVehicleService(id: number, payload: any) {
+    return this.http.put<any>(`${this.base}/vehicle-services/${id}`, payload);
+  }
+
+  deleteVehicleService(id: number) {
+    return this.http.delete<any>(`${this.base}/vehicle-services/${id}`);
+  }
 }

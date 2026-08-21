@@ -11,6 +11,17 @@ $routes->group("api", ["filter" => "cors"], function ($routes) {
     $routes->delete("vehicles/(:num)", "Vehicles::delete/$1");
     $routes->get("vehicles/(:num)/last-odometer", "Bookings::lastOdometer/$1");
     
+    // --- Route Vehicle Services ---
+    $routes->get("vehicles/(:num)/services", "VehicleServices::index/$1");
+    
+    // Tambahkan route upcoming di sini (sebelum route dengan parameter /(:num))
+    $routes->get("vehicle-services/upcoming", "VehicleServices::upcoming");
+    
+    $routes->post("vehicle-services", "VehicleServices::create");
+    $routes->put("vehicle-services/(:num)", "VehicleServices::update/$1");
+    $routes->delete("vehicle-services/(:num)", "VehicleServices::delete/$1");
+    // ------------------------------
+    
     $routes->post("login", "Auth::login");
     $routes->post("logout", "Auth::logout");
     $routes->post("auth/change-password", "Auth::changePassword");

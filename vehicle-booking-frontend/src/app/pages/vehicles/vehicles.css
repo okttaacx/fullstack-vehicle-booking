@@ -181,7 +181,7 @@
 }
 
 .stat-icon--green { background: #f0fdf4; color: #16a34a; }
-.stat-icon--blue   { background: #eff6ff; color: #2563eb; }
+.stat-icon--blue  { background: #eff6ff; color: #2563eb; }
 .stat-icon--purple { background: #f5f3ff; color: #7c3aed; }
 .stat-icon--amber  { background: #fffbeb; color: #d97706; }
 
@@ -525,4 +525,53 @@
 
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr; }
+}
+
+/* ===== Riwayat Service ===== */
+.svc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.svc-card {
+  background: #f7faf8;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.svc-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.svc-date {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.svc-desc {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+}
+
+.svc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.svc-confirm-text {
+  font-size: 11px;
+  color: #64748b;
+  margin-right: 2px;
 }

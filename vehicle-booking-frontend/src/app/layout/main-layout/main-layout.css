@@ -16,8 +16,8 @@
   display: flex;
   flex-direction: column;
   padding: 24px 18px;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow-x: hidden; /* BISA MEMOTONG DROPDOWN JIKA MELEBAR */
+  overflow-y: auto;   /* BISA MEMOTONG DROPDOWN JIKA PANJANG KE BAWAH */
 }
 
 .sidebar-top {
@@ -82,6 +82,144 @@
   height: 1px;
   background: rgba(255, 255, 255, 0.08);
   margin-bottom: 18px;
+}
+
+/* --- Notifikasi --- */
+.notif-wrap {
+  position: relative;
+  margin: 10px 0 4px 0;
+}
+
+.notif-bell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: 'Baloo 2', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notif-bell:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.notif-label {
+  flex: 1;
+  text-align: left;
+}
+
+.notif-badge {
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.notif-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: transparent;
+}
+
+.notif-dropdown-floating {
+  position: fixed;
+  background: #143d2c;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+  min-width: 280px;
+}
+
+.notif-header {
+  padding: 12px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.notif-list {
+  overflow-y: auto;
+  max-height: 280px;
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.notif-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.notif-item:last-child {
+  border-bottom: none;
+}
+
+.notif-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.notif-icon-approval { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+.notif-icon-ready { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+.notif-icon-rejected { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+
+.notif-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.notif-item-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+}
+
+.notif-item-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notif-empty {
+  padding: 20px 14px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* Menu sidebar — ukuran ringkas */

@@ -53,7 +53,6 @@
     <p class="error-text">{{ errorMsg() }}</p>
   } @else {
 
-    <!-- Stat cards -->
     <section class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon stat-icon--green">
@@ -87,7 +86,7 @@
 
       <div class="stat-card">
         <div class="stat-icon stat-icon--amber">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3-3.5 3.5z"></path></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 00 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3-3.5 3.5z"></path></svg>
         </div>
         <div class="stat-body">
           <span class="stat-label">Sewa</span>
@@ -96,7 +95,6 @@
       </div>
     </section>
 
-    <!-- Table -->
     <section class="table-card">
       <div class="table-wrap">
         <table class="veh-table">
@@ -133,7 +131,13 @@
                 </td>
                 <td>{{ typeLabel(v.type) }}</td>
                 <td>{{ v.fuel_consumption }} km/l</td>
-                <td>{{ v.service_schedule || '-' }}</td>
+                <td>
+                  @if (nextServiceFor(v.id)) {
+                    {{ nextServiceFor(v.id).service_date | slice:0:10 }}
+                  } @else {
+                    <span class="text-muted">-</span>
+                  }
+                </td>
                 <td>
                   <span class="badge" [class.badge-blue]="v.ownership === 'milik_perusahaan'" [class.badge-purple]="v.ownership === 'sewa'">
                     {{ ownershipLabel(v.ownership) }}
@@ -156,6 +160,7 @@
                         <div class="menu-dropdown">
                           <button (click)="openDetail(v)">Lihat Detail</button>
                           <button (click)="openStatus(v)">Status Kendaraan</button>
+                          <button (click)="openServiceHistory(v)">Riwayat Service</button>
                           @if (auth.isAdmin()) {
                             <button (click)="openEditForm(v)">Edit</button>
                             <button class="menu-danger" (click)="confirmDelete(v.id)">Hapus</button>
@@ -265,7 +270,21 @@
           <div><strong>Tipe</strong><span>{{ typeLabel(detailVehicle().type) }}</span></div>
           <div><strong>Status Kepemilikan</strong><span>{{ ownershipLabel(detailVehicle().ownership) }}</span></div>
           <div><strong>Konsumsi BBM</strong><span>{{ detailVehicle().fuel_consumption }} km/liter</span></div>
-          <div><strong>Jadwal Service</strong><span>{{ detailVehicle().service_schedule || '-' }}</span></div>
+          
+          <div>
+            <strong>Service Berikutnya</strong>
+            <span>
+              @if (detailNextService()) {
+                {{ detailNextService().service_date | slice:0:10 }}
+                @if (detailNextService().description) {
+                  — {{ detailNextService().description }}
+                }
+              } @else {
+                Tidak ada jadwal terjadwal
+              }
+            </span>
+          </div>
+          
         </div>
         <div class="modal-actions">
           <button class="btn-ghost-lg" (click)="closeDetail()">Tutup</button>
@@ -303,6 +322,93 @@
 
         <div class="modal-actions">
           <button class="btn-ghost-lg" (click)="closeStatus()">Tutup</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (serviceVehicle()) {
+    <div class="modal-overlay" (click)="closeServiceHistory()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <h3 class="modal-title">Riwayat Service — {{ serviceVehicle().name }}</h3>
+
+        @if (auth.isAdmin() && !showServiceForm()) {
+          <button class="btn-primary" style="margin-bottom: 14px;" (click)="openServiceCreateForm()">
+            + Tambah Catatan Service
+          </button>
+        }
+
+        @if (showServiceForm()) {
+          <div class="form-grid" style="margin-bottom: 16px;">
+            <div class="field">
+              <label>Tanggal Service *</label>
+              <input type="date" [(ngModel)]="serviceDate">
+            </div>
+            <div class="field">
+              <label>Status</label>
+              <select [(ngModel)]="serviceStatus">
+                <option value="scheduled">Terjadwal</option>
+                <option value="done">Selesai</option>
+                <option value="cancelled">Dibatalkan</option>
+              </select>
+            </div>
+            <div class="field field--full">
+              <label>Keterangan</label>
+              <input type="text" [(ngModel)]="serviceDescription" placeholder="Contoh: Ganti oli & filter udara">
+            </div>
+          </div>
+
+          @if (serviceFormError()) {
+            <p class="error-text form-error">{{ serviceFormError() }}</p>
+          }
+
+          <div class="modal-actions" style="margin-bottom: 16px;">
+            <button class="btn-primary" (click)="submitServiceLog()" [disabled]="serviceSubmitting()">
+              {{ serviceSubmitting() ? 'Menyimpan...' : 'Simpan' }}
+            </button>
+            <button class="btn-ghost-lg" (click)="cancelServiceForm()">Batal</button>
+          </div>
+        }
+
+        @if (serviceLoading()) {
+          <p class="loading-text">Memuat riwayat service...</p>
+        } @else {
+          <div class="svc-list">
+            @for (s of serviceLogs(); track s.id) {
+              <div class="svc-card">
+                <div class="svc-top">
+                  <span class="svc-date">{{ s.service_date | slice:0:10 }}</span>
+                  <span class="badge" [class]="serviceStatusClass(s.status)">{{ serviceStatusLabel(s.status) }}</span>
+                </div>
+
+                <p class="svc-desc">{{ s.description || '-' }}</p>
+
+                @if (auth.isAdmin()) {
+                  @if (deletingServiceId() === s.id) {
+                    <div class="svc-actions">
+                      <span class="svc-confirm-text">Yakin hapus catatan ini?</span>
+                      <button class="btn-mini btn-danger" (click)="doDeleteService(s.id)">Ya, Hapus</button>
+                      <button class="btn-mini btn-ghost" (click)="cancelDeleteService()">Batal</button>
+                    </div>
+                  } @else {
+                    <div class="svc-actions">
+                      @if (s.status === 'scheduled') {
+                        <button class="btn-mini" (click)="markServiceDone(s)">Tandai Selesai</button>
+                      }
+                      <button class="btn-mini btn-ghost" (click)="openServiceEditForm(s)">Edit</button>
+                      <button class="btn-mini btn-danger" (click)="confirmDeleteService(s.id)">Hapus</button>
+                    </div>
+                  }
+                }
+              </div>
+            } @empty {
+              <p class="empty-note">Belum ada catatan service untuk kendaraan ini</p>
+            }
+          </div>
+        }
+
+        <div class="modal-actions">
+          <button class="btn-ghost-lg" (click)="closeServiceHistory()">Tutup</button>
         </div>
       </div>
     </div>

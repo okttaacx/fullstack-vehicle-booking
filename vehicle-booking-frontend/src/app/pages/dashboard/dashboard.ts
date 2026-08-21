@@ -61,6 +61,22 @@ export class Dashboard implements OnInit, AfterViewInit {
   private rendered = false;
 
   ngOnInit() {
+    // --- Fetch Upcoming Services Baru ---
+    this.api.getUpcomingVehicleServices().subscribe({
+      next: (res) => {
+        const records = res.data ?? [];
+        this.upcomingService.set(
+          records.slice(0, 5).map((r: any) => ({
+            ...r,
+            name: r.vehicle_name,
+            serviceDate: new Date(r.service_date),
+          }))
+        );
+      },
+      error: () => {},
+    });
+    // ------------------------------------
+
     this.api.getVehicles().subscribe({
       next: (res) => {
         this.vehiclesData = res.data ?? [];
@@ -81,7 +97,6 @@ export class Dashboard implements OnInit, AfterViewInit {
             : 0
         );
 
-        this.computeUpcomingService();
         this.tryRender();
       },
       error: () => this.errorMsg.set('Gagal memuat data kendaraan'),
@@ -149,26 +164,6 @@ export class Dashboard implements OnInit, AfterViewInit {
       this.computeAvailability();
       this.renderCharts();
     }, 0);
-  }
-
-  private computeUpcomingService() {
-    const now = new Date();
-    const in14days = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-
-    const list = this.vehiclesData
-      .filter((v: any) => v.service_schedule)
-      .map((v: any) => ({
-        ...v,
-        serviceDate: new Date(v.service_schedule),
-      }))
-      .filter((v: any) => v.serviceDate <= in14days)
-      .sort(
-        (a: any, b: any) =>
-          a.serviceDate.getTime() - b.serviceDate.getTime()
-      )
-      .slice(0, 5);
-
-    this.upcomingService.set(list);
   }
 
   private computeAvailability() {

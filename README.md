@@ -50,10 +50,11 @@ Aplikasi pemesanan kendaraan perusahaan (tambang nikel) untuk memonitor kendaraa
 ## ✨ Fitur
 
 - **Autentikasi** — login berbasis role (`admin` dan `approver`), session disimpan di browser.
+- **Notifikasi In-App** — lonceng notifikasi *floating* di sidebar dengan badge jumlah item belum ditinjau, auto-refresh setiap 30 detik. **Approver** mendapat notifikasi saat ada booking yang benar-benar sudah waktunya mereka setujui (memperhitungkan giliran level 1/2, bukan sekadar status `pending`); **Admin** mendapat notifikasi saat ada booking yang siap ditandai selesai (`approved_l2`) atau baru ditolak dalam 3 hari terakhir.
 - **Ganti Password Mandiri** — setiap user (admin maupun approver) dapat mengubah password akunnya sendiri melalui dropdown pada kartu profil di sidebar, dengan verifikasi password lama wajib sebelum password baru disimpan.
 - **Kelola User** — halaman khusus **Admin** untuk mengelola seluruh akun (tambah, edit, hapus), mengatur role (`admin`/`approver`) beserta level approval (1 atau 2) untuk akun bertipe approver, lengkap pencarian berdasarkan nama/username.
 - **Riwayat Aktivitas (Activity Log)** — halaman khusus **Admin** yang menampilkan seluruh jejak aktivitas penting di sistem (login, ganti password, buat/ubah/hapus data, approve/reject, tandai selesai, dsb) lengkap dengan pelaku, waktu, alamat IP, serta pencarian bebas dan filter berdasarkan jenis aksi maupun rentang tanggal.
-- **Manajemen Kendaraan** — CRUD lengkap (tambah, lihat, edit, hapus), pencarian, filter tipe/kepemilikan, **foto kendaraan yang dapat disesuaikan per unit** (isi URL gambar sendiri saat tambah/edit kendaraan, dengan fallback ke foto generic per tipe jika belum diisi), serta **riwayat pemakaian** yang menampilkan jarak tempuh dan BBM terpakai per trip.
+- **Manajemen Kendaraan** — CRUD lengkap (tambah, lihat, edit, hapus), pencarian, filter tipe/kepemilikan, **foto kendaraan yang dapat disesuaikan per unit** (isi URL gambar sendiri saat tambah/edit kendaraan, dengan fallback ke foto generic per tipe jika belum diisi), **riwayat pemakaian** yang menampilkan jarak tempuh dan BBM terpakai per trip, serta **riwayat service** (catat tanggal, keterangan, dan status setiap kali kendaraan diservice — bukan hanya jadwal berikutnya).
 - **Manajemen Driver** — CRUD lengkap, pencarian, peringatan otomatis jika masa berlaku SIM sudah/akan habis dalam 30 hari, serta **riwayat pemakaian per driver** (daftar booking yang pernah menggunakan driver tersebut, lengkap kendaraan dan status).
 - **Pemesanan Kendaraan**
   - Admin membuat pemesanan (pilih kendaraan, driver, dan 2 approver).
@@ -65,9 +66,9 @@ Aplikasi pemesanan kendaraan perusahaan (tambang nikel) untuk memonitor kendaraa
   - Pencarian, filter status, sorting, dan pagination pada daftar pemesanan.
 - **Kalender Pemakaian Kendaraan** — halaman visual bertipe Gantt chart mingguan yang menampilkan jadwal pemakaian seluruh kendaraan sekaligus (satu baris per kendaraan, bar warna sesuai status: menunggu L1/L2, disetujui, selesai), lengkap navigasi minggu sebelumnya/berikutnya dan tombol kembali ke hari ini — memudahkan melihat sekilas kendaraan mana yang kosong pada tanggal tertentu.
 - **Persetujuan Berjenjang (2 Level)** — approver Level 1 menyetujui/menolak terlebih dahulu, baru approver Level 2 bisa bertindak.
-- **Dashboard** — ringkasan total kendaraan, total pemesanan, tren 7 hari terakhir, distribusi kepemilikan armada, ketersediaan armada, dan pengingat jadwal service.
+- **Dashboard** — ringkasan total kendaraan, total pemesanan, tren 7 hari terakhir, distribusi kepemilikan armada, ketersediaan armada, dan pengingat jadwal service (dibaca langsung dari riwayat service, bukan dari kolom tunggal yang mudah kadaluarsa).
 - **Export Laporan Excel** — laporan pemesanan periodik (bisa difilter rentang tanggal) diunduh dalam format `.xlsx`, termasuk kolom odometer awal/akhir, jarak tempuh, BBM terisi, dan catatan selesai untuk pemesanan yang sudah rampung.
-- **Log Aktivitas** — setiap aksi penting (login, ganti password, buat/ubah/hapus user & kendaraan & driver, buat/ubah/hapus/selesaikan/approve/reject pemesanan) tercatat otomatis di tabel `activity_logs` dan dapat ditinjau kapan saja melalui halaman Riwayat Aktivitas.
+- **Log Aktivitas** — setiap aksi penting (login, ganti password, buat/ubah/hapus user & kendaraan & driver & catatan service, buat/ubah/hapus/selesaikan/approve/reject pemesanan) tercatat otomatis di tabel `activity_logs` dan dapat ditinjau kapan saja melalui halaman Riwayat Aktivitas.
 
 ---
 
@@ -77,8 +78,10 @@ Aplikasi pemesanan kendaraan perusahaan (tambang nikel) untuk memonitor kendaraa
 vehicle-booking-system/
 ├── vehicle-booking/            # Backend — CodeIgniter 4
 │   ├── app/
-│   │   ├── Controllers/        # Auth, Users, Vehicles, Drivers, Bookings, Approvals, Reports, ActivityLogs
-│   │   ├── Models/              # UsersModel, VehiclesModel, DriversModel, FuelLogsModel, ActivityLogsModel, dll.
+│   │   ├── Controllers/        # Auth, Users, Vehicles, Drivers, VehicleServices,
+│   │   │                       # Bookings, Approvals, Reports, ActivityLogs
+│   │   ├── Models/              # UsersModel, VehiclesModel, DriversModel, FuelLogsModel,
+│   │   │                       # VehicleServiceScheduleModel, ActivityLogsModel, dll.
 │   │   ├── Libraries/            # ActivityLogger
 │   │   ├── Database/Migrations/
 │   │   ├── Filters/             # CorsFilter
@@ -88,7 +91,7 @@ vehicle-booking-system/
 └── vehicle-booking-frontend/   # Frontend — Angular
     └── src/app/
         ├── core/                # Auth, Api service, auth guard
-        ├── layout/main-layout/  # Sidebar, shell utama, & modal Ganti Password
+        ├── layout/main-layout/  # Sidebar, notifikasi floating, modal Ganti Password
         └── pages/
             ├── login/
             ├── dashboard/
@@ -195,19 +198,21 @@ Sistem punya 2 peran: **Admin** (mengelola master data & pemesanan) dan **Approv
    Selama masih status ini, admin masih bisa mengedit atau menghapus pemesanan
    melalui menu "..." pada baris data.
 
-2. Approver Level 1 login → menu "Approval"
-   Melihat daftar pemesanan yang menunggu persetujuannya → klik "Setujui" atau "Tolak"
+2. Approver Level 1 login → notifikasi lonceng menyala jika ada booking baru yang
+   perlu ditinjau → menu "Approval" → klik "Setujui" atau "Tolak"
    → jika disetujui, status berubah: MENUNGGU L2 (approved_l1)
    → jika ditolak, status: DITOLAK (alur berhenti, alasan tercatat)
 
    Setelah tahap ini, pemesanan TIDAK BISA lagi diedit/dihapus oleh admin.
 
-3. Approver Level 2 login → menu "Approval"
-   Pemesanan baru muncul di daftarnya SETELAH Level 1 menyetujui → klik "Setujui" atau "Tolak"
+3. Approver Level 2 login → notifikasi lonceng menyala jika ada booking yang
+   sudah disetujui Level 1 dan menunggu tindakannya → menu "Approval" →
+   klik "Setujui" atau "Tolak"
    → jika disetujui, status akhir: DISETUJUI (approved_l2)
    → jika ditolak, status: DITOLAK
 
-4. Setelah kendaraan selesai digunakan dan dikembalikan, admin membuka menu "..."
+4. Setelah kendaraan selesai digunakan dan dikembalikan, admin (yang notifikasi
+   lonceng-nya menyala menandakan ada booking siap diselesaikan) membuka menu "..."
    pada pemesanan berstatus DISETUJUI dan memilih "Tandai Selesai"
    → muncul form kecil untuk mencatat odometer awal (terisi otomatis dari
      pemakaian terakhir kendaraan), odometer akhir, liter BBM terisi, dan catatan
@@ -222,13 +227,14 @@ Sistem punya 2 peran: **Admin** (mengelola master data & pemesanan) dan **Approv
 | Halaman | Fungsi | Akses |
 |---|---|---|
 | **Dashboard** | Ringkasan statistik & grafik operasional | Semua role |
-| **Kendaraan** | Daftar kendaraan, detail, foto per unit, riwayat pemakaian (jarak tempuh & BBM) | Lihat: semua role. Tambah/Edit/Hapus: **Admin** |
+| **Kendaraan** | Daftar kendaraan, detail, foto per unit, riwayat pemakaian & riwayat service | Lihat: semua role. Tambah/Edit/Hapus: **Admin** |
 | **Driver** | Daftar driver, riwayat pemakaian, peringatan masa berlaku SIM | Lihat: semua role. Tambah/Edit/Hapus: **Admin** |
 | **Pemesanan** | Riwayat semua pemesanan, edit/hapus/tandai selesai, export Excel | Lihat: semua role. Kelola: **Admin** |
 | **Kalender** | Visual jadwal pemakaian seluruh kendaraan per minggu (Gantt chart) | Semua role |
 | **Approval** | Daftar pemesanan yang perlu disetujui user yang login | Hanya tampil untuk role **Approver** |
 | **Kelola User** | Tambah/edit/hapus akun, atur role & level approval | Hanya **Admin** |
 | **Riwayat Aktivitas** | Jejak seluruh aktivitas penting sistem, pencarian & filter aksi/tanggal | Hanya **Admin** |
+| **Notifikasi** | Lonceng floating di sidebar — booking perlu ditinjau (approver) / siap diselesaikan atau baru ditolak (admin) | Admin & Approver |
 | **Ganti Password** | Ubah password akun sendiri (via dropdown kartu profil di sidebar) | Semua role |
 
 ### Contoh Uji Coba Alur Lengkap
@@ -236,19 +242,23 @@ Sistem punya 2 peran: **Admin** (mengelola master data & pemesanan) dan **Approv
 1. Login `admin` / `admin123` → buka **Pemesanan** → buat 1 pemesanan baru, ketik nama driver bebas, pilih approver Level 1 = `spv_tambang1`, Level 2 = `manager_hq`.
 2. (Opsional) Selama status masih "Menunggu L1", coba **Edit** data lewat menu "..." untuk mengubah tanggal/tujuan.
 3. Coba buat pemesanan lain dengan kendaraan & rentang tanggal yang sama — sistem akan menolak dengan pesan bentrok jadwal.
-4. Logout → login `spv_tambang1` → buka **Approval** → klik **Setujui** pada pemesanan tadi.
-5. Logout → login `manager_hq` → buka **Approval** → pemesanan kini muncul di daftarnya → klik **Setujui**.
-6. Login kembali sebagai `admin` → cek **Pemesanan**, status sudah berubah menjadi **Disetujui**. Buka menu "..." → klik **Tandai Selesai**, isi odometer akhir, liter BBM, dan catatan.
-7. Buka halaman **Kendaraan**, klik **Status Kendaraan** pada kendaraan yang baru dipakai — jarak tempuh dan BBM yang dicatat akan tampil di riwayatnya.
+4. Logout → login `spv_tambang1` → perhatikan badge notifikasi di sidebar menyala → buka **Approval** → klik **Setujui** pada pemesanan tadi.
+5. Logout → login `manager_hq` → badge notifikasi menyala karena booking sudah lolos Level 1 → buka **Approval** → klik **Setujui**.
+6. Login kembali sebagai `admin` → badge notifikasi menyala (booking siap ditandai selesai) → cek **Pemesanan**, status sudah berubah menjadi **Disetujui**. Buka menu "..." → klik **Tandai Selesai**, isi odometer akhir, liter BBM, dan catatan.
+7. Buka halaman **Kendaraan**, klik **Status Kendaraan** pada kendaraan yang baru dipakai — jarak tempuh dan BBM yang dicatat akan tampil di riwayatnya. Coba juga **Riwayat Service** untuk menambah catatan servis baru.
 8. Buka halaman **Driver**, klik **Riwayat** pada driver yang tadi dipakai — pemesanan yang baru saja diselesaikan akan tampil di riwayatnya.
 9. Buka halaman **Kalender**, lihat bar pemesanan tadi muncul pada baris kendaraan yang bersangkutan sesuai rentang tanggalnya.
 10. Sebagai `admin`, buka halaman **Kelola User** → tambah 1 akun approver baru (isi nama, username, password, pilih level) → akun tersebut langsung bisa dipakai login.
 11. Klik kartu profil di pojok bawah sidebar → pilih **Ganti Password** → masukkan password lama dan password baru untuk mengubah kredensial akun yang sedang login.
-12. Buka halaman **Riwayat Aktivitas** → seluruh langkah di atas (login, buat booking, approve, tandai selesai, tambah user, ganti password) akan muncul sebagai baris log lengkap dengan pelaku dan waktunya. Coba gunakan filter jenis aksi atau rentang tanggal untuk mempersempit tampilan.
+12. Buka halaman **Riwayat Aktivitas** → seluruh langkah di atas (login, buat booking, approve, tandai selesai, tambah user, ganti password, catat service) akan muncul sebagai baris log lengkap dengan pelaku dan waktunya. Coba gunakan filter jenis aksi atau rentang tanggal untuk mempersempit tampilan.
 
 ### Menambahkan Foto Kendaraan
 
 Di halaman **Kendaraan**, saat menambah atau mengedit data, isi field **URL Foto Kendaraan** dengan link gambar yang sudah ter-hosting online (misalnya dari Unsplash atau Pinterest — klik kanan gambar → *Copy image address*, pastikan link mengarah langsung ke file gambar, bukan ke halaman web). Jika dikosongkan, sistem akan menampilkan foto generic berdasarkan tipe kendaraan (angkutan orang/barang) sebagai fallback. Foto ini akan otomatis ikut tampil di kartu kendaraan maupun tabel dan detail pemesanan.
+
+### Mencatat Riwayat Service Kendaraan
+
+Di halaman **Kendaraan**, menu "..." pada setiap unit memiliki opsi **Riwayat Service** — di sana Admin dapat menambah catatan servis baru (tanggal, keterangan, status: Terjadwal/Selesai/Dibatalkan), menandai catatan sebagai selesai, mengedit, atau menghapusnya. Kolom "Jadwal Service" pada tabel utama serta baris "Service Berikutnya" pada modal detail kendaraan otomatis menampilkan catatan berstatus Terjadwal dengan tanggal terdekat. Data yang sama juga menjadi dasar pengingat jadwal servis pada Dashboard.
 
 ### Mengelola User & Approver
 
@@ -261,6 +271,14 @@ Saat mengedit user, field password dapat dikosongkan jika tidak ingin mengubah p
 ### Meninjau Riwayat Aktivitas
 
 Halaman **Riwayat Aktivitas** (khusus Admin) menampilkan seluruh baris log dari tabel `activity_logs`, terurut dari yang terbaru, lengkap dengan nama pelaku, jenis aksi (berwarna sesuai kategori — hijau untuk aksi tambah/setujui, biru untuk ubah, merah untuk hapus/tolak), deskripsi detail, waktu kejadian, dan alamat IP. Gunakan kolom pencarian untuk mencari berdasarkan nama user/deskripsi, atau dropdown filter jenis aksi dan rentang tanggal untuk mempersempit hasil. Baris dengan pelaku "Sistem" menandakan aksi yang tercatat tanpa konteks user yang login (umumnya dari controller yang belum menyertakan `user_id` saat memanggil `ActivityLogger`).
+
+### Notifikasi In-App
+
+Ikon lonceng di bagian atas sidebar menampilkan badge merah berisi jumlah item yang perlu perhatian, dengan dropdown floating (tidak mendorong menu lain) berisi daftar singkat. Data di-refresh otomatis setiap 30 detik:
+- **Approver** — hanya notifikasi booking yang **benar-benar sudah gilirannya** ditinjau (level 2 tidak akan mendapat notifikasi selama level 1 booking yang sama belum disetujui).
+- **Admin** — notifikasi booking berstatus Disetujui (siap ditandai selesai) dan booking yang ditolak dalam 3 hari terakhir.
+
+Klik salah satu item notifikasi akan mengarahkan langsung ke halaman terkait (Approval atau Pemesanan).
 
 ### Export Laporan
 
@@ -280,7 +298,7 @@ Tabel utama:
 | `vehicle_bookings` | Data pemesanan kendaraan (`status`: pending / approved_l1 / approved_l2 / completed / rejected) |
 | `booking_approvals` | Baris persetujuan per level per pemesanan (status, notes, approved_at) |
 | `fuel_logs` | Catatan odometer awal/akhir, BBM terisi, dan catatan per pemesanan yang telah selesai |
-| `vehicle_service_schedule` | Jadwal service kendaraan |
+| `vehicle_service_schedule` | Riwayat & jadwal service kendaraan (`service_date`, `description`, `status`: scheduled/done/cancelled) — sumber data pengingat servis di Dashboard dan modal detail kendaraan |
 | `activity_logs` | Log aktivitas sistem (`user_id`, `action`, `description`, `ip_address`, `created_at`) — diisi otomatis lewat `ActivityLogger::log()` di setiap controller |
 
 > Physical Data Model (ERD) dan Activity Diagram dilampirkan terpisah sebagai bagian dari dokumentasi submission.
@@ -306,6 +324,11 @@ Base URL: `http://localhost:8080/api`
 | PUT | `/vehicles/{id}` | Update kendaraan (dapat menyertakan `image_url`) |
 | DELETE | `/vehicles/{id}` | Hapus kendaraan |
 | GET | `/vehicles/{id}/last-odometer` | Odometer akhir terakhir dari kendaraan (untuk default odometer awal pemakaian berikutnya) |
+| GET | `/vehicles/{id}/services` | Riwayat service kendaraan tertentu, terurut terbaru |
+| POST | `/vehicle-services` | Tambah catatan service baru. Body: `vehicle_id`, `service_date`, `description`, `status` |
+| PUT | `/vehicle-services/{id}` | Update catatan service (termasuk mengubah status, mis. menandai selesai) |
+| DELETE | `/vehicle-services/{id}` | Hapus catatan service |
+| GET | `/vehicle-services/upcoming` | Seluruh catatan service berstatus `scheduled` dari semua kendaraan, terurut tanggal terdekat (dipakai Dashboard & kolom tabel Kendaraan) |
 | GET | `/drivers` | Daftar driver |
 | POST | `/drivers` | Tambah driver (juga dipanggil otomatis saat nama driver baru diketik di form pemesanan) |
 | PUT | `/drivers/{id}` | Update driver |
@@ -316,7 +339,7 @@ Base URL: `http://localhost:8080/api`
 | PUT | `/bookings/{id}` | Update pemesanan — **hanya jika status masih pending**, tetap divalidasi bentrok jadwal |
 | DELETE | `/bookings/{id}` | Hapus pemesanan — **hanya jika status masih pending** |
 | POST | `/bookings/{id}/complete` | Menandai pemesanan selesai — **hanya jika status sudah approved_l2**. Body opsional: `odometer_start`, `odometer_end`, `fuel_liters`, `notes` |
-| GET | `/approvals?approver_id={id}` | Seluruh riwayat approval milik seorang approver (pending/approved/rejected) |
+| GET | `/approvals?approver_id={id}` | Seluruh riwayat approval milik seorang approver (pending/approved/rejected), termasuk flag `actionable` yang menandai apakah baris tersebut benar-benar sudah bisa ditindak (mis. level 2 baru `actionable` setelah level 1 disetujui) |
 | POST | `/approvals/{id}/approve` | Menyetujui pemesanan |
 | POST | `/approvals/{id}/reject` | Menolak pemesanan (menyertakan `notes` alasan) |
 | GET | `/reports/bookings/export` | Export laporan pemesanan ke Excel (parameter opsional `start` & `end`), termasuk kolom odometer, jarak tempuh, BBM, dan catatan selesai |
@@ -326,7 +349,9 @@ Base URL: `http://localhost:8080/api`
 
 ## 🗺 Roadmap
 
-Fitur yang direncanakan untuk pengembangan selanjutnya:
+Fitur yang sudah selesai dan yang direncanakan untuk pengembangan selanjutnya:
+
+### Selesai
 
 - [x] Validasi bentrok jadwal pemesanan (double booking)
 - [x] Manajemen Driver (CRUD + peringatan masa berlaku SIM)
@@ -338,8 +363,24 @@ Fitur yang direncanakan untuk pengembangan selanjutnya:
 - [x] Halaman kelola User/Approver dari UI
 - [x] Ganti password mandiri untuk setiap user
 - [x] Riwayat aktivitas (activity log) yang dapat dilihat di UI
-- [ ] Riwayat service kendaraan (bukan hanya jadwal berikutnya)
-- [ ] Notifikasi in-app
+- [x] Riwayat service kendaraan (bukan hanya jadwal berikutnya)
+- [x] Notifikasi in-app (lonceng floating, badge, auto-refresh 30 detik)
+
+### Direncanakan — Keamanan
+
+- [ ] **Rate limiting pada endpoint login** — mencegah percobaan brute-force dengan membatasi jumlah percobaan gagal per IP/username dalam rentang waktu tertentu (memanfaatkan `Throttler` bawaan CodeIgniter 4).
+- [ ] **Validasi & sanitasi input lebih ketat** — menerapkan `Validation` service bawaan CodeIgniter secara konsisten di seluruh controller (saat ini sebagian besar masih validasi manual per field), serta memastikan seluruh query tetap memakai Query Builder/parameter binding untuk mencegah SQL injection.
+- [ ] **Autentikasi berbasis token (JWT)** — menggantikan pola login sederhana saat ini (session disimpan di browser tanpa token bertanda tangan) dengan token yang memiliki masa berlaku dan dapat diverifikasi di setiap request API, sekaligus memungkinkan penerapan middleware otorisasi per-role yang lebih ketat.
+- [ ] **HTTPS & security headers** saat deployment produksi (HSTS, CSP, `X-Frame-Options`, dsb).
+
+### Direncanakan — Testing
+
+- [ ] **Backend — PHPUnit** (bawaan CodeIgniter 4 lewat `php spark test`): unit test untuk logic validasi kritikal (bentrok jadwal, alur approval berjenjang, perhitungan `actionable`), serta feature test untuk endpoint-endpoint utama (`/bookings`, `/approvals`, `/auth/change-password`).
+- [ ] **Frontend — Jasmine/Karma** (bawaan Angular CLI lewat `ng test`): unit test untuk logic komponen yang sudah memakai signals/computed (mis. `filteredBookings`, `barStyle` di halaman Kalender, `nextServiceFor` di halaman Kendaraan), serta pengujian rendering kondisional (`@if`/`@for`) pada template.
+- [ ] Menyiapkan CI (GitHub Actions) untuk menjalankan kedua test suite otomatis pada setiap push/pull request.
+
+### Direncanakan — Lainnya
+
 - [ ] Optimasi tampilan mobile / PWA
 
 ---
@@ -367,6 +408,9 @@ Periksa properti `$allowedFields` pada Model terkait. CodeIgniter secara diam-di
 **`Cannot find module './pages/nama-halaman/nama-halaman'` saat build Angular**
 Route sudah didaftarkan di `app.routes.ts`, tapi file komponennya (`.ts`/`.html`/`.css`) belum dibuat di folder yang sesuai, atau nama path pada `loadComponent()` tidak sama persis dengan nama folder/file (termasuk kesalahan tulis tunggal/jamak, mis. `activity-log` vs `activity-logs`). Buat folder dan file komponennya terlebih dahulu (bisa lewat `New-Item` di PowerShell atau `ng generate component`), lalu pastikan path pada route cocok persis.
 
+**`TS2345: Argument of type 'string' is not assignable to parameter of type 'number'`**
+`currentUser()?.id` pada service `Auth` umumnya bertipe `string`, sementara sejumlah method `Api` (mis. `getApprovals(approverId: number)`) mendeklarasikan parameter bertipe `number`. Bungkus dengan `Number(...)` saat memanggil, mis. `this.api.getApprovals(Number(user.id))`.
+
 **Frontend menampilkan "Cannot GET"**
 Biasanya karena SSR mencoba mengakses `localStorage` di sisi server. Pastikan pengecekan `isPlatformBrowser` digunakan sebelum memanggil Web API browser di service Angular (`Auth`).
 
@@ -376,8 +420,8 @@ Pastikan elemen `<canvas>` sudah ter-render di DOM sebelum Chart.js dipanggil (g
 **`NG8004: No pipe found with name 'slice'` / `'date'` / pipe bawaan lainnya**
 Karena komponen bertipe *standalone*, pipe bawaan Angular seperti `SlicePipe` atau `DatePipe` harus diimpor eksplisit dari `@angular/common` dan didaftarkan di array `imports` komponen terkait — tidak otomatis tersedia seperti pada NgModule biasa.
 
-**Dropdown menu "..." pada baris/kartu terakhir terpotong**
-Pastikan `overflow: hidden` tidak diterapkan langsung pada container yang membungkus dropdown; gunakan `border-radius` pada elemen anak (mis. baris pertama/terakhir tabel) alih-alih pada container luar. Jika baris berada di posisi paling bawah, arahkan dropdown terbuka ke atas (`bottom` bukan `top`) agar tidak keluar dari area yang terlihat.
+**Dropdown atau notifikasi ikut terdorong/mendorong elemen sidebar lain**
+Dropdown yang menggunakan `position: absolute` akan tetap terikat pada alur tata letak parent-nya (mendorong elemen lain jika parent memiliki `overflow` tertentu). Untuk dropdown yang perlu benar-benar melayang di atas seluruh halaman (mis. notifikasi), gunakan `position: fixed` dengan koordinat dihitung manual dari `getBoundingClientRect()` elemen pemicunya melalui `ViewChild`, dan render dropdown tersebut di luar container yang membatasi (lihat implementasi lonceng notifikasi pada `main-layout`).
 
 **Booking gagal disimpan dengan pesan bentrok jadwal**
 Ini bukan bug — validasi memang menolak pemesanan kendaraan yang sama pada rentang waktu yang tumpang tindih dengan pemesanan aktif lain. Pilih kendaraan lain, ubah rentang tanggal, atau selesaikan (Tandai Selesai) pemesanan lama terlebih dahulu jika kendaraan sudah tidak terpakai.
@@ -393,6 +437,9 @@ Pastikan password lama yang diinput benar-benar sama dengan password yang sedang
 
 **Kolom "pelaku" pada Riwayat Aktivitas menampilkan "Sistem" untuk beberapa baris**
 Terjadi jika controller terkait memanggil `ActivityLogger::log(null, ...)` alih-alih menyertakan ID user yang sedang login (umumnya pada operasi yang belum mengirim ulang identitas user dari frontend, seperti pada beberapa aksi kendaraan/driver). Ini bukan bug fatal — log tetap tercatat, hanya kolom pelakunya kosong. Untuk melengkapi, sertakan `user_id` yang relevan pada pemanggilan `ActivityLogger::log()` di controller terkait.
+
+**Notifikasi approver level 2 tidak muncul padahal ada booking berstatus "Menunggu L2"**
+Ini justru perilaku yang benar — badge notifikasi hanya menyala untuk baris approval yang bendera `actionable`-nya `true` dari endpoint `/approvals`. Approver level 2 baru dianggap `actionable` setelah approval level 1 pada booking yang sama berstatus `approved`, mencegah notifikasi yang menyesatkan approver untuk bertindak sebelum gilirannya.
 
 **Server backend mati sendiri**
 `php spark serve` berjalan di foreground — jangan tutup terminal tempat command ini dijalankan, dan jangan pakai terminal yang sama untuk command lain.

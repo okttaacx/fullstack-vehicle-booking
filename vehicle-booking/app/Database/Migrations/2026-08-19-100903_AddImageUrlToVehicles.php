@@ -20,6 +20,9 @@ class AddImageUrlToVehicles extends Migration
 
     public function down()
     {
-        $this->forge->dropColumn('vehicles', 'image_url');
+        // Pengecekan agar SQLite3 tidak error saat mencoba dropColumn pada testing
+        if ($this->db->DBDriver !== 'SQLite3') {
+            $this->forge->dropColumn('vehicles', 'image_url');
+        }
     }
 }

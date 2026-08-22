@@ -9,6 +9,7 @@
   <img src="https://img.shields.io/badge/CodeIgniter-4.7-EF4223?style=for-the-badge&logo=codeigniter&logoColor=white" />
   <img src="https://img.shields.io/badge/Angular-21-DD0031?style=for-the-badge&logo=angular&logoColor=white" />
   <img src="https://img.shields.io/badge/MySQL-8.x-4479A1?style=for-the-badge&logo=mysql&logoColor=white" />
+  <img src="https://img.shields.io/badge/Tests-25%20passing-16A34A?style=for-the-badge&logo=php&logoColor=white" />
   <img src="https://img.shields.io/badge/Status-Active-16A34A?style=for-the-badge" />
 </p>
 
@@ -28,6 +29,7 @@ Aplikasi pemesanan kendaraan perusahaan (tambang nikel) untuk memonitor kendaraa
 - [Alur Bisnis / Panduan Penggunaan](#-alur-bisnis--panduan-penggunaan)
 - [Skema Database](#-skema-database)
 - [Daftar API Endpoint](#-daftar-api-endpoint)
+- [Testing](#-testing)
 - [Roadmap](#-roadmap)
 - [Troubleshooting Umum](#-troubleshooting-umum)
 
@@ -40,6 +42,7 @@ Aplikasi pemesanan kendaraan perusahaan (tambang nikel) untuk memonitor kendaraa
 | Backend Framework | CodeIgniter | 4.7.4 |
 | Bahasa Backend | PHP | 8.3.13 |
 | Database | MySQL (via Laragon) | 8.x |
+| Testing | PHPUnit (via `codeigniter4/framework` test suite) | ^10.5 |
 | Frontend Framework | Angular (standalone components + SSR) | 21.x |
 | Grafik Dashboard | Chart.js | 4.x |
 | Export Laporan | PhpSpreadsheet | ^5.9 |
@@ -59,13 +62,13 @@ Aplikasi pemesanan kendaraan perusahaan (tambang nikel) untuk memonitor kendaraa
 - **Pemesanan Kendaraan**
   - Admin membuat pemesanan (pilih kendaraan, driver, dan 2 approver).
   - **Input nama driver bebas diketik** — jika nama belum terdaftar, sistem otomatis membuat data driver baru; jika sudah ada, otomatis tersambung ke data yang sama (dengan bantuan `<datalist>` sebagai saran).
-  - **Validasi bentrok jadwal** — sistem menolak pemesanan baru/pengeditan jika kendaraan yang sama sudah dipesan (dengan status aktif) pada rentang waktu yang tumpang tindih, lengkap dengan pesan yang menyebutkan kode booking penyebab bentrok.
+  - **Validasi bentrok jadwal** — sistem menolak pemesanan baru/pengeditan jika kendaraan yang sama sudah dipesan (dengan status aktif) pada rentang waktu yang tumpang tindih, lengkap dengan pesan yang menyebutkan kode booking penyebab bentrok. **Diverifikasi otomatis lewat test** (lihat [Testing](#-testing)).
   - **Edit & Hapus pemesanan** — hanya dapat dilakukan selama status masih *"Menunggu Persetujuan L1"* (belum ada approver yang bertindak). Setelah disetujui/ditolak salah satu approver, data terkunci demi menjaga integritas alur persetujuan.
   - **Tandai Selesai + Log BBM & Odometer** — setelah pemesanan disetujui penuh (Level 1 & 2) dan kendaraan dikembalikan, admin menandainya sebagai *Selesai* sekaligus mencatat odometer awal/akhir dan liter BBM terisi (beserta catatan opsional). Odometer awal terisi otomatis dari catatan pemakaian terakhir kendaraan tersebut. Kendaraan otomatis kembali tersedia untuk pemesanan baru.
   - **Detail pemesanan lengkap** — modal detail menampilkan data kendaraan, driver, pemohon, riwayat approval, alasan penolakan (jika ada), serta odometer/BBM/catatan hasil "Tandai Selesai".
   - Pencarian, filter status, sorting, dan pagination pada daftar pemesanan.
 - **Kalender Pemakaian Kendaraan** — halaman visual bertipe Gantt chart mingguan yang menampilkan jadwal pemakaian seluruh kendaraan sekaligus (satu baris per kendaraan, bar warna sesuai status: menunggu L1/L2, disetujui, selesai), lengkap navigasi minggu sebelumnya/berikutnya dan tombol kembali ke hari ini — memudahkan melihat sekilas kendaraan mana yang kosong pada tanggal tertentu.
-- **Persetujuan Berjenjang (2 Level)** — approver Level 1 menyetujui/menolak terlebih dahulu, baru approver Level 2 bisa bertindak.
+- **Persetujuan Berjenjang (2 Level)** — approver Level 1 menyetujui/menolak terlebih dahulu, baru approver Level 2 bisa bertindak. **Diverifikasi otomatis lewat test** (lihat [Testing](#-testing)).
 - **Dashboard** — ringkasan total kendaraan, total pemesanan, tren 7 hari terakhir, distribusi kepemilikan armada, ketersediaan armada, dan pengingat jadwal service (dibaca langsung dari riwayat service, bukan dari kolom tunggal yang mudah kadaluarsa).
 - **Export Laporan Excel** — laporan pemesanan periodik (bisa difilter rentang tanggal) diunduh dalam format `.xlsx`, termasuk kolom odometer awal/akhir, jarak tempuh, BBM terisi, dan catatan selesai untuk pemesanan yang sudah rampung.
 - **Log Aktivitas** — setiap aksi penting (login, ganti password, buat/ubah/hapus user & kendaraan & driver & catatan service, buat/ubah/hapus/selesaikan/approve/reject pemesanan) tercatat otomatis di tabel `activity_logs` dan dapat ditinjau kapan saja melalui halaman Riwayat Aktivitas.
@@ -86,6 +89,11 @@ vehicle-booking-system/
 │   │   ├── Database/Migrations/
 │   │   ├── Filters/             # CorsFilter
 │   │   └── Config/Routes.php
+│   ├── tests/
+│   │   ├── _support/            # Trait/helper bersama antar test (mis. CreatesBookingFixtures)
+│   │   └── Feature/             # Feature test lewat endpoint HTTP asli
+│   │       ├── BookingConflictTest.php
+│   │       └── ApprovalFlowTest.php
 │   └── public/
 │
 └── vehicle-booking-frontend/   # Frontend — Angular
@@ -111,6 +119,7 @@ vehicle-booking-system/
 ### Prasyarat
 
 - [Laragon](https://laragon.org/) (atau XAMPP) dengan PHP 8.3+ dan MySQL
+- Ekstensi PHP `sqlite3` aktif (dipakai khusus saat menjalankan test — lihat [Testing](#-testing))
 - [Composer](https://getcomposer.org/)
 - [Node.js](https://nodejs.org/) versi LTS terbaru & npm
 - Angular CLI: `npm install -g @angular/cli`
@@ -347,6 +356,46 @@ Base URL: `http://localhost:8080/api`
 
 ---
 
+## 🧪 Testing
+
+Backend punya feature test (PHPUnit) yang jalan lewat endpoint HTTP asli — bukan cuma manggil method controller secara terpisah — supaya routing, validasi, dan format response ikut tervalidasi.
+
+### Cakupan saat ini
+
+| File | Yang divalidasi |
+|---|---|
+| `tests/Feature/BookingConflictTest.php` | Booking bentrok jadwal ditolak (`409`), booking back-to-back (jam sambung tanpa jeda) diizinkan, kendaraan berbeda dengan jadwal sama tidak dianggap bentrok, tanggal selesai lebih awal dari tanggal mulai ditolak, edit/hapus terkunci begitu status booking bukan `pending` lagi, edit tidak salah anggap bentrok dengan booking itu sendiri |
+| `tests/Feature/ApprovalFlowTest.php` | Approval level 2 tidak bisa disetujui sebelum level 1, flag `actionable` berubah sesuai giliran approver, status booking naik bertahap (`pending` → `approved_l1` → `approved_l2`), reject menghentikan alur, "Tandai Selesai" hanya bisa dilakukan setelah `approved_l2`, validasi odometer akhir tidak boleh lebih kecil dari odometer awal |
+
+Total **25 test, 43 assertion**, semuanya lulus.
+
+### Menjalankan test
+
+```powershell
+cd vehicle-booking
+vendor\bin\phpunit
+```
+
+atau lewat spark:
+
+```powershell
+php spark test
+```
+
+### Bagaimana test-nya bekerja
+
+- Test jalan lewat trait bawaan CodeIgniter (`DatabaseTestTrait` + `FeatureTestTrait`), yang otomatis migrate skema ke **SQLite in-memory** (bukan MySQL) setiap kali test dijalankan — jadi database development (`vehicle_booking_db`) di MySQL **tidak pernah tersentuh** oleh test.
+- Membutuhkan ekstensi PHP `sqlite3` aktif di `php.ini` (lihat [Troubleshooting](#-troubleshooting-umum) kalau muncul error terkait ini).
+- Data dummy (user, kendaraan) dibuat lewat helper `Tests\Support\CreatesBookingFixtures` di `tests/_support/`, dipakai bersama oleh kedua test class supaya tidak duplikasi kode.
+
+### Belum tercakup (lihat [Roadmap](#-roadmap))
+
+- Test untuk controller lain (Vehicles, Drivers, Users, VehicleServices, ActivityLogs, Reports).
+- Frontend (Jasmine/Karma).
+- CI (GitHub Actions) untuk menjalankan test otomatis di setiap push/PR.
+
+---
+
 ## 🗺 Roadmap
 
 Fitur yang sudah selesai dan yang direncanakan untuk pengembangan selanjutnya:
@@ -365,6 +414,14 @@ Fitur yang sudah selesai dan yang direncanakan untuk pengembangan selanjutnya:
 - [x] Riwayat aktivitas (activity log) yang dapat dilihat di UI
 - [x] Riwayat service kendaraan (bukan hanya jadwal berikutnya)
 - [x] Notifikasi in-app (lonceng floating, badge, auto-refresh 30 detik)
+- [x] **Testing awal (PHPUnit)** — feature test untuk validasi bentrok jadwal dan alur approval berjenjang (25 test, lihat [Testing](#-testing))
+
+### Direncanakan — Testing
+
+- [ ] **Perluas cakupan backend** ke controller lain (Vehicles, Drivers, Users, VehicleServices, ActivityLogs, Reports) serta endpoint `/auth/change-password`.
+- [ ] **Frontend — Jasmine/Karma** (bawaan Angular CLI lewat `ng test`): unit test untuk logic komponen yang sudah memakai signals/computed (mis. `filteredBookings`, `barStyle` di halaman Kalender, `nextServiceFor` di halaman Kendaraan), serta pengujian rendering kondisional (`@if`/`@for`) pada template.
+- [ ] Menyiapkan CI (GitHub Actions) untuk menjalankan kedua test suite otomatis pada setiap push/pull request, lengkap dengan badge status di README.
+- [ ] Aktifkan Xdebug agar laporan code coverage (`vendor\bin\phpunit --coverage-text`) bisa dipakai.
 
 ### Direncanakan — Keamanan
 
@@ -372,12 +429,6 @@ Fitur yang sudah selesai dan yang direncanakan untuk pengembangan selanjutnya:
 - [ ] **Validasi & sanitasi input lebih ketat** — menerapkan `Validation` service bawaan CodeIgniter secara konsisten di seluruh controller (saat ini sebagian besar masih validasi manual per field), serta memastikan seluruh query tetap memakai Query Builder/parameter binding untuk mencegah SQL injection.
 - [ ] **Autentikasi berbasis token (JWT)** — menggantikan pola login sederhana saat ini (session disimpan di browser tanpa token bertanda tangan) dengan token yang memiliki masa berlaku dan dapat diverifikasi di setiap request API, sekaligus memungkinkan penerapan middleware otorisasi per-role yang lebih ketat.
 - [ ] **HTTPS & security headers** saat deployment produksi (HSTS, CSP, `X-Frame-Options`, dsb).
-
-### Direncanakan — Testing
-
-- [ ] **Backend — PHPUnit** (bawaan CodeIgniter 4 lewat `php spark test`): unit test untuk logic validasi kritikal (bentrok jadwal, alur approval berjenjang, perhitungan `actionable`), serta feature test untuk endpoint-endpoint utama (`/bookings`, `/approvals`, `/auth/change-password`).
-- [ ] **Frontend — Jasmine/Karma** (bawaan Angular CLI lewat `ng test`): unit test untuk logic komponen yang sudah memakai signals/computed (mis. `filteredBookings`, `barStyle` di halaman Kalender, `nextServiceFor` di halaman Kendaraan), serta pengujian rendering kondisional (`@if`/`@for`) pada template.
-- [ ] Menyiapkan CI (GitHub Actions) untuk menjalankan kedua test suite otomatis pada setiap push/pull request.
 
 ### Direncanakan — Lainnya
 
@@ -391,13 +442,13 @@ Fitur yang sudah selesai dan yang direncanakan untuk pengembangan selanjutnya:
 Sering kali bukan masalah konfigurasi CORS itu sendiri, melainkan *fatal error* di sisi PHP yang membuat response gagal terkirim sebelum sempat melewati filter CORS. Periksa `writable/logs/log-<tanggal>.log` untuk pesan error sebenarnya sebelum mengubah konfigurasi CORS.
 
 **`Namespace declaration statement has to be the very first statement`**
-Terjadi ketika ada teks tidak sengaja tertinggal di atas baris `<?php`/`namespace` pada file PHP (controller maupun migration) — biasanya sisa perintah terminal yang ikut ter-paste saat menimpa file lewat PowerShell heredoc. Perbaiki dengan menimpa ulang file secara utuh dan pastikan baris pertama persis `<?php`.
+Terjadi ketika ada teks tidak sengaja tertinggal di atas baris `<?php`/`namespace` pada file PHP (controller, migration, maupun test) — biasanya sisa perintah terminal yang ikut ter-paste saat menimpa file lewat PowerShell heredoc, atau **BOM (Byte Order Mark)** tak terlihat yang disisipkan otomatis oleh `Set-Content -Encoding UTF8` di Windows PowerShell 5.1. Perbaiki dengan menimpa ulang file secara utuh memakai `Out-File -Encoding ascii` (bukan `Set-Content -Encoding UTF8`) untuk file yang isinya murni ASCII seperti kode PHP, dan pastikan baris pertama persis `<?php`.
 
 **`Table 'namadb.nama_tabel' doesn't exist`**
 Migration untuk tabel tersebut belum dijalankan atau gagal karena error sintaks (lihat poin di atas). Jalankan ulang `php spark migrate` setelah memastikan file migration bersih.
 
 **`Class "App\Models\NamaModel" not found`**
-File model belum dibuat, namanya tidak sama persis dengan class-nya, atau berada di folder yang salah. CodeIgniter 4 memakai autoload PSR-4 — nama file **harus** sama persis dengan nama class (mis. `FuelLogsModel.php` berisi `class FuelLogsModel extends Model`) dan berada di `app/Models/`.
+File model belum dibuat, namanya tidak sama persis dengan class-nya, atau berada di folder yang salah. CodeIgniter 4 memakai autoload PSR-4 — nama file **harus** sama persis dengan nama class (mis. `FuelLogsModel.php` berisi `class FuelLogsModel extends Model`) dan berada di `app/Models/`. Untuk namespace baru di folder `tests/` (mis. `Tests\Support\...`), jalankan `composer dump-autoload` agar autoloader ikut diperbarui.
 
 **Endpoint mengembalikan data tidak lengkap (field kosong/`null`) padahal tabel lain punya datanya**
 Periksa apakah method controller terkait melakukan `JOIN` ke tabel relasi (`vehicles`, `drivers`, `users`, `fuel_logs`, dsb) menggunakan query builder, atau hanya memanggil `$model->find($id)` yang cuma mengambil baris mentah dari satu tabel. Method `index()` dan `show()` pada controller yang sama seringkali perlu pola query yang identik agar hasilnya konsisten.
@@ -443,6 +494,18 @@ Ini justru perilaku yang benar — badge notifikasi hanya menyala untuk baris ap
 
 **Server backend mati sendiri**
 `php spark serve` berjalan di foreground — jangan tutup terminal tempat command ini dijalankan, dan jangan pakai terminal yang sama untuk command lain.
+
+**`could not find driver` atau test gagal total saat `vendor\bin\phpunit` dijalankan**
+Ekstensi PHP `sqlite3` belum aktif — testing framework CodeIgniter butuh ini untuk membuat database SQLite in-memory sementara. Aktifkan di `php.ini` (`extension=sqlite3`), lalu restart Laragon/terminal.
+
+**`Failed to drop column "..." on "..." table` saat menjalankan test**
+SQLite (dipakai khusus untuk lingkungan test) punya dukungan terbatas untuk `DROP COLUMN` dibanding MySQL. Kalau migration kamu memakai `dropColumn()`, migration tersebut perlu pengecualian khusus saat `ENVIRONMENT === 'testing'`, atau pertimbangkan untuk tidak menghapus kolom lewat migration terpisah pada development lanjutan.
+
+**Warning `No code coverage driver available` saat run test**
+Ini hanya warning, bukan kegagalan test — muncul karena Xdebug (atau PCOV) belum ter-install, yang dibutuhkan khusus untuk menghitung *code coverage* (`vendor\bin\phpunit --coverage-text`). Test tetap berjalan dan lulus seperti biasa tanpa Xdebug; extension ini baru wajib kalau kamu ingin melihat laporan persentase baris kode yang sudah tercakup test.
+
+**Response `respond([...])` mengirim status code `200` walau body-nya berisi `"status": 201`/`404`/dst**
+`$this->respond($data, $statusCode)` di CodeIgniter menentukan HTTP status code lewat **argumen kedua**, bukan dari isi array `$data`. Kalau argumen kedua tidak diisi, status code HTTP asli tetap `200` meskipun body JSON menyebut angka lain — ini gampang lolos dari pengecekan manual karena body-nya "kelihatan" benar. Pastikan endpoint yang seharusnya mengembalikan `201 Created`, `404 Not Found`, dsb memanggil `respond($data, $kodeStatusnya)` secara eksplisit, dan verifikasi lewat test yang memeriksa HTTP status code asli (bukan cuma isi body).
 
 ---
 

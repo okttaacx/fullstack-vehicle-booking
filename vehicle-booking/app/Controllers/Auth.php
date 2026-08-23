@@ -12,6 +12,16 @@ class Auth extends ResourceController
 
     public function login()
     {
+        $throttler = service("throttler");
+
+        $ip = str_replace(":", "_", $this->request->getIPAddress());
+        if ($throttler->check("login-{$ip}", 5, MINUTE) === false) {
+            return $this->fail(
+                "Terlalu banyak percobaan login. Coba lagi dalam {$throttler->getTokenTime()} detik.",
+                429
+            );
+        }
+
         $data = $this->request->getJSON(true);
 
         $username = $data["username"] ?? null;
@@ -55,6 +65,16 @@ class Auth extends ResourceController
     // Body: user_id, old_password, new_password
     public function changePassword()
     {
+        $throttler = service("throttler");
+
+        $ip = str_replace(":", "_", $this->request->getIPAddress());
+        if ($throttler->check("change-password-{$ip}", 5, MINUTE) === false) {
+            return $this->fail(
+                "Terlalu banyak percobaan. Coba lagi dalam {$throttler->getTokenTime()} detik.",
+                429
+            );
+        }
+
         $data = $this->request->getJSON(true);
 
         $required = ["user_id", "old_password", "new_password"];

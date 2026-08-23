@@ -253,48 +253,49 @@
         </div>
       }
     </div>
-
-    @if (showPasswordModal()) {
-      <div class="pw-modal-overlay" (click)="closePasswordModal()">
-        <div class="pw-modal-card" (click)="$event.stopPropagation()">
-          <h3 class="pw-modal-title">Ganti Password</h3>
-
-          <div class="pw-field">
-            <label>Password Lama</label>
-            <input type="password" [(ngModel)]="oldPassword" placeholder="Masukkan password saat ini">
-          </div>
-
-          <div class="pw-field">
-            <label>Password Baru</label>
-            <input type="password" [(ngModel)]="newPassword" placeholder="Minimal 6 karakter">
-          </div>
-
-          <div class="pw-field">
-            <label>Konfirmasi Password Baru</label>
-            <input type="password" [(ngModel)]="confirmPassword" placeholder="Ulangi password baru">
-          </div>
-
-          @if (passwordError()) {
-            <p class="pw-error">{{ passwordError() }}</p>
-          }
-          @if (passwordSuccess()) {
-            <p class="pw-success">{{ passwordSuccess() }}</p>
-          }
-
-          <div class="pw-modal-actions">
-            <button class="pw-btn-submit" (click)="submitPasswordChange()" [disabled]="changingPassword()">
-              {{ changingPassword() ? 'Menyimpan...' : 'Simpan Password' }}
-            </button>
-            <button class="pw-btn-cancel" (click)="closePasswordModal()">Batal</button>
-          </div>
-        </div>
-      </div>
-    }
   </aside>
 
   <main class="page-body">
     <router-outlet></router-outlet>
   </main>
+
+  <!-- MODAL GANTI PASSWORD (Di Luar Sidebar, Sejajar Main) -->
+  @if (showPasswordModal()) {
+    <div class="pw-modal-overlay" (click)="closePasswordModal()">
+      <div class="pw-modal-card" (click)="$event.stopPropagation()">
+        <h3 class="pw-modal-title">Ganti Password</h3>
+
+        <div class="pw-field">
+          <label>Password Lama</label>
+          <input type="password" [(ngModel)]="oldPassword" placeholder="Masukkan password saat ini">
+        </div>
+
+        <div class="pw-field">
+          <label>Password Baru</label>
+          <input type="password" [(ngModel)]="newPassword" placeholder="Minimal 6 karakter">
+        </div>
+
+        <div class="pw-field">
+          <label>Konfirmasi Password Baru</label>
+          <input type="password" [(ngModel)]="confirmPassword" placeholder="Ulangi password baru">
+        </div>
+
+        @if (passwordError()) {
+          <p class="pw-error">{{ passwordError() }}</p>
+        }
+        @if (passwordSuccess()) {
+          <p class="pw-success">{{ passwordSuccess() }}</p>
+        }
+
+        <div class="pw-modal-actions">
+          <button class="pw-btn-submit" (click)="submitPasswordChange()" [disabled]="changingPassword()">
+            {{ changingPassword() ? 'Menyimpan...' : 'Simpan Password' }}
+          </button>
+          <button class="pw-btn-cancel" (click)="closePasswordModal()">Batal</button>
+        </div>
+      </div>
+    </div>
+  }
 
   <!-- BLOK NOTIFIKASI DROPDOWN (Posisinya Fixed di luar sidebar) -->
   @if (notifOpen()) {

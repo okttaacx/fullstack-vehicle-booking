@@ -1,0 +1,36 @@
+name: Backend Tests
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'vehicle-booking/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'vehicle-booking/**'
+
+jobs:
+  phpunit:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: vehicle-booking
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: sqlite3, mbstring, intl, curl
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Run PHPUnit tests
+        run: vendor/bin/phpunit

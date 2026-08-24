@@ -63,7 +63,7 @@ class Users extends ResourceController
             "status"  => 201,
             "message" => "User berhasil ditambahkan",
             "data"    => ["id" => $id],
-        ]);
+        ], 201); // ✅ Diperbaiki: Menambahkan HTTP status 201
     }
 
     public function update($id = null)

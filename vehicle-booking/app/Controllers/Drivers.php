@@ -42,7 +42,7 @@ class Drivers extends ResourceController
             "status"  => 201,
             "message" => "Driver berhasil ditambahkan",
             "data"    => ["id" => $id],
-        ]);
+        ], 201); // ✅ Diperbaiki: Menambahkan HTTP status 201
     }
 
     public function update($id = null)

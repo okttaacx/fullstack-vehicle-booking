@@ -2,6 +2,12 @@
 
 namespace Tests\Support;
 
+/**
+ * @property int $requesterId
+ * @property int $vehicleId
+ * @property int $approver1Id
+ * @property int $approver2Id
+ */
 trait CreatesBookingFixtures
 {
     protected function createUser(string $role = 'admin', ?int $level = null): int
@@ -25,7 +31,7 @@ trait CreatesBookingFixtures
 
         $db->table('vehicles')->insert([
             'name'             => 'Truck ' . uniqid(),
-            'license_plate'    => 'B ' . random_int(1000, 9999) . ' TEST',
+            'license_plate'    => 'B ' . strtoupper(substr(uniqid(), -6)) . ' TEST',
             'type'             => 'angkutan_barang',
             'ownership'        => 'milik_perusahaan',
             'fuel_consumption' => 10.5,

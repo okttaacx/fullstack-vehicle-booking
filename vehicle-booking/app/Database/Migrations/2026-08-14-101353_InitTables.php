@@ -29,7 +29,10 @@ class InitTables extends Migration
             'license_plate'    => ['type' => 'VARCHAR', 'constraint' => 20, 'unique' => true],
             'type'             => ['type' => 'ENUM', 'constraint' => ['angkutan_orang', 'angkutan_barang']],
             'ownership'        => ['type' => 'ENUM', 'constraint' => ['milik_perusahaan', 'sewa']],
-            'fuel_consumption' => ['type' => 'FLOAT'],
+            
+            // PERBAIKAN: Ditambahkan 'null' => true di sini
+            'fuel_consumption' => ['type' => 'FLOAT', 'null' => true], 
+            
             'service_schedule' => ['type' => 'DATE', 'null' => true],
             'created_at'       => ['type' => 'DATETIME', 'null' => true],
             'updated_at'       => ['type' => 'DATETIME', 'null' => true],

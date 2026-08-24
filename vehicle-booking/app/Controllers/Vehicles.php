@@ -47,7 +47,7 @@ class Vehicles extends ResourceController
             "status"  => 201,
             "message" => "Kendaraan berhasil ditambahkan",
             "data"    => ["id" => $id],
-        ]);
+        ], 201);
     }
 
     public function update($id = null)

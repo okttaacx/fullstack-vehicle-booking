@@ -150,6 +150,41 @@ final class AuthTest extends CIUnitTestCase
         $result->assertStatus(429);
     }
 
+    // ---- Logout ----
+
+    public function testLogoutReturnsSuccessAndLogsActivity(): void
+    {
+        $result = $this->withBodyFormat('json')->post('api/logout', [
+            'user_id' => $this->userId,
+        ]);
+
+        $result->assertStatus(200);
+
+        $body = json_decode($result->getJSON(), true);
+        $this->assertSame('Logout berhasil', $body['message']);
+
+        $db  = \Config\Database::connect();
+        $log = $db->table('activity_logs')
+            ->where('user_id', $this->userId)
+            ->where('action', 'logout')
+            ->orderBy('id', 'DESC')
+            ->get()->getRowArray();
+
+        $this->assertNotNull($log, 'Activity log untuk logout harus tercatat');
+    }
+
+    public function testLogoutSucceedsEvenWithoutUserId(): void
+    {
+        // Controller tidak mewajibkan user_id — kalau tidak dikirim,
+        // ActivityLogger::log() dipanggil dengan user_id null (tercatat sebagai "Sistem").
+        $result = $this->withBodyFormat('json')->post('api/logout', []);
+
+        $result->assertStatus(200);
+
+        $body = json_decode($result->getJSON(), true);
+        $this->assertSame('Logout berhasil', $body['message']);
+    }
+
     // ---- Change Password ----
 
     public function testChangePasswordSucceedsWithCorrectOldPassword(): void

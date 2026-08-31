@@ -236,6 +236,136 @@ final class BookingsTest extends CIUnitTestCase
         $result->assertStatus(404);
     }
 
+    // ---- update() bentrok jadwal ----
+
+    public function testUpdateFailsWhenNewDateConflictsWithAnotherBooking(): void
+    {
+        // Booking A tetap di jadwal aslinya
+        $this->createBooking([
+            'start_date' => '2026-10-05 08:00:00',
+            'end_date'   => '2026-10-05 17:00:00',
+        ]);
+
+        // Booking B awalnya di jadwal lain (tidak bentrok)
+        $bookingBId = $this->createBooking([
+            'start_date' => '2026-10-10 08:00:00',
+            'end_date'   => '2026-10-10 17:00:00',
+        ]);
+
+        // Coba pindahkan booking B ke jadwal yang sama persis dengan booking A
+        $result = $this->withBodyFormat('json')->put("api/bookings/{$bookingBId}", [
+            'start_date' => '2026-10-05 08:00:00',
+            'end_date'   => '2026-10-05 17:00:00',
+        ]);
+
+        $result->assertStatus(409);
+    }
+
+    public function testUpdateFailsWhenEndDateBeforeStartDate(): void
+    {
+        $bookingId = $this->createBooking();
+
+        $result = $this->withBodyFormat('json')->put("api/bookings/{$bookingId}", [
+            'start_date' => '2026-11-01 17:00:00',
+            'end_date'   => '2026-11-01 08:00:00',
+        ]);
+
+        $result->assertStatus(400);
+    }
+
+    // ---- complete() ----
+
+    public function testCompleteFailsForUnknownId(): void
+    {
+        $result = $this->withBodyFormat('json')->post('api/bookings/999999/complete', []);
+        $result->assertStatus(404);
+    }
+
+    public function testCompleteFailsWhenStatusNotApprovedL2(): void
+    {
+        // Booking baru dibuat, masih status pending, belum lewat approval sama sekali
+        $bookingId = $this->createBooking();
+
+        $result = $this->withBodyFormat('json')->post("api/bookings/{$bookingId}/complete", [
+            'odometer_start' => 500,
+            'odometer_end'   => 650,
+        ]);
+
+        $result->assertStatus(400);
+        $this->seeInDatabase('vehicle_bookings', [
+            'id'     => $bookingId,
+            'status' => 'pending',
+        ]);
+    }
+
+    public function testCompleteFailsWhenOdometerEndLessThanStart(): void
+    {
+        $bookingId = $this->createBooking();
+        [$level1Id, $level2Id] = $this->approvalIds($bookingId);
+
+        $this->withBodyFormat('json')->post("api/approvals/{$level1Id}/approve", []);
+        $this->withBodyFormat('json')->post("api/approvals/{$level2Id}/approve", []);
+
+        $result = $this->withBodyFormat('json')->post("api/bookings/{$bookingId}/complete", [
+            'odometer_start' => 650,
+            'odometer_end'   => 500,
+        ]);
+
+        $result->assertStatus(400);
+        $this->seeInDatabase('vehicle_bookings', [
+            'id'     => $bookingId,
+            'status' => 'approved_l2',
+        ]);
+    }
+
+    public function testCompleteSucceedsWithoutOptionalFuelData(): void
+    {
+        $bookingId = $this->createBooking();
+        [$level1Id, $level2Id] = $this->approvalIds($bookingId);
+
+        $this->withBodyFormat('json')->post("api/approvals/{$level1Id}/approve", []);
+        $this->withBodyFormat('json')->post("api/approvals/{$level2Id}/approve", []);
+
+        // Tidak mengirim odometer_start/odometer_end/fuel_liters/notes sama sekali
+        $result = $this->withBodyFormat('json')->post("api/bookings/{$bookingId}/complete", []);
+
+        $result->assertStatus(200);
+        $this->seeInDatabase('vehicle_bookings', [
+            'id'     => $bookingId,
+            'status' => 'completed',
+        ]);
+        $this->seeInDatabase('fuel_logs', [
+            'booking_id'     => $bookingId,
+            'odometer_start' => null,
+            'odometer_end'   => null,
+        ]);
+    }
+
+    public function testCompleteLogsActivityWithBookingCode(): void
+    {
+        $bookingId = $this->createBooking();
+        [$level1Id, $level2Id] = $this->approvalIds($bookingId);
+
+        $this->withBodyFormat('json')->post("api/approvals/{$level1Id}/approve", []);
+        $this->withBodyFormat('json')->post("api/approvals/{$level2Id}/approve", []);
+
+        $db   = \Config\Database::connect();
+        $code = $db->table('vehicle_bookings')->where('id', $bookingId)->get()->getRowArray()['booking_code'];
+
+        $this->withBodyFormat('json')->post("api/bookings/{$bookingId}/complete", [
+            'odometer_start' => 100,
+            'odometer_end'   => 200,
+        ]);
+
+        $log = $db->table('activity_logs')
+            ->where('action', 'complete_booking')
+            ->like('description', $code)
+            ->orderBy('id', 'DESC')
+            ->get()->getRowArray();
+
+        $this->assertNotNull($log, 'Activity log untuk complete booking harus tercatat');
+    }
+
     // ---- delete() ----
 
     public function testDeleteSucceedsWhilePending(): void

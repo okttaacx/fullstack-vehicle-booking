@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/CodeIgniter-4.7-EF4223?style=for-the-badge&logo=codeigniter&logoColor=white" />
   <img src="https://img.shields.io/badge/Angular-21-DD0031?style=for-the-badge&logo=angular&logoColor=white" />
   <img src="https://img.shields.io/badge/MySQL-8.x-4479A1?style=for-the-badge&logo=mysql&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-25%20passing-16A34A?style=for-the-badge&logo=php&logoColor=white" />
+  <img src="https://img.shields.io/badge/Tests-143%20passing-16A34A?style=for-the-badge&logo=php&logoColor=white" />
   <img src="https://img.shields.io/badge/Status-Active-16A34A?style=for-the-badge" />
 </p>
 
@@ -99,7 +99,16 @@ vehicle-booking-system/
 │   │   ├── _support/            # Trait/helper bersama antar test (mis. CreatesBookingFixtures)
 │   │   └── Feature/             # Feature test lewat endpoint HTTP asli
 │   │       ├── BookingConflictTest.php
-│   │       └── ApprovalFlowTest.php
+│   │       ├── ApprovalFlowTest.php
+│   │       ├── AuthTest.php
+│   │       ├── BookingsTest.php
+│   │       ├── ApprovalsTest.php
+│   │       ├── VehiclesTest.php
+│   │       ├── DriversTest.php
+│   │       ├── UsersTest.php
+│   │       ├── ActivityLogsTest.php
+│   │       ├── VehicleServicesTest.php
+│   │       └── ReportsTest.php
 │   └── public/
 │
 └── vehicle-booking-frontend/   # Frontend — Angular
@@ -372,8 +381,17 @@ Backend punya feature test (PHPUnit) yang jalan lewat endpoint HTTP asli — buk
 |---|---|
 | `tests/Feature/BookingConflictTest.php` | Booking bentrok jadwal ditolak (`409`), booking back-to-back (jam sambung tanpa jeda) diizinkan, kendaraan berbeda dengan jadwal sama tidak dianggap bentrok, tanggal selesai lebih awal dari tanggal mulai ditolak, edit/hapus terkunci begitu status booking bukan `pending` lagi, edit tidak salah anggap bentrok dengan booking itu sendiri |
 | `tests/Feature/ApprovalFlowTest.php` | Approval level 2 tidak bisa disetujui sebelum level 1, flag `actionable` berubah sesuai giliran approver, status booking naik bertahap (`pending` → `approved_l1` → `approved_l2`), reject menghentikan alur, "Tandai Selesai" hanya bisa dilakukan setelah `approved_l2`, validasi odometer akhir tidak boleh lebih kecil dari odometer awal |
+| `tests/Feature/AuthTest.php` | Login, rate limiting percobaan gagal, ganti password (verifikasi password lama wajib) |
+| `tests/Feature/BookingsTest.php` | CRUD pemesanan, data hasil join (kendaraan, driver, pemohon), `fuel_log` & `rejection_reason`, `last-odometer`, validasi tanggal, serta lock edit/hapus sesuai status |
+| `tests/Feature/ApprovalsTest.php` | Index approval (termasuk flag `actionable`), approve, reject |
+| `tests/Feature/VehiclesTest.php` | CRUD kendaraan lengkap, validasi field wajib, activity log saat create/delete |
+| `tests/Feature/DriversTest.php` | CRUD driver, peringatan masa berlaku SIM |
+| `tests/Feature/UsersTest.php` | CRUD user, pengaturan role & level approval |
+| `tests/Feature/ActivityLogsTest.php` | Index log aktivitas, join data user (pelaku), filter berdasarkan jenis aksi & rentang tanggal |
+| `tests/Feature/VehicleServicesTest.php` | Riwayat service per kendaraan, endpoint `upcoming` (filter status `scheduled` & join data kendaraan), CRUD catatan service, activity log |
+| `tests/Feature/ReportsTest.php` | Export laporan ke Excel — header response (`Content-Type`, `Content-Disposition`), isi kolom sesuai data booking, fallback `"-"` untuk data kosong, odometer & jarak tempuh setelah booking selesai, filter rentang tanggal |
 
-Total **25 test, 43 assertion**, semuanya lulus.
+Total **143 test, 288 assertion**, semuanya lulus. Seluruh 9 controller backend (`Auth`, `Bookings`, `Approvals`, `Vehicles`, `Drivers`, `Users`, `ActivityLogs`, `VehicleServices`, `Reports`) sudah punya feature test.
 
 ### Menjalankan test secara lokal
 
@@ -386,6 +404,12 @@ atau lewat spark:
 
 ```powershell
 php spark test
+```
+
+Untuk melihat laporan coverage per baris kode:
+
+```powershell
+vendor\bin\phpunit --coverage-text
 ```
 
 ### CI — GitHub Actions
@@ -405,12 +429,13 @@ Status build terkini selalu bisa dicek lewat badge di bagian atas README ini, at
 
 - Test jalan lewat trait bawaan CodeIgniter (`DatabaseTestTrait` + `FeatureTestTrait`), yang otomatis migrate skema ke **SQLite in-memory** (bukan MySQL) setiap kali test dijalankan — jadi database development (`vehicle_booking_db`) di MySQL **tidak pernah tersentuh** oleh test, baik secara lokal maupun di CI.
 - Membutuhkan ekstensi PHP `sqlite3` aktif di `php.ini` untuk dijalankan secara lokal (lihat [Troubleshooting](#-troubleshooting-umum) kalau muncul error terkait ini). Di CI, extension ini sudah disiapkan otomatis oleh workflow.
-- Data dummy (user, kendaraan) dibuat lewat helper `Tests\Support\CreatesBookingFixtures` di `tests/_support/`, dipakai bersama oleh kedua test class supaya tidak duplikasi kode.
+- Data dummy (user, kendaraan, dsb) dibuat lewat helper `Tests\Support\CreatesBookingFixtures` di `tests/_support/`, dipakai bersama oleh beberapa test class supaya tidak duplikasi kode.
+- Karena kombinasi `migrateOnce` + `refresh` pada trait database tidak selalu menjamin tabel benar-benar kosong di awal setiap method test, sebagian besar test menghindari asumsi "database kosong" dan sebisa mungkin mencari baris spesifik lewat nilai unik (mis. `uniqid()` pada deskripsi/aksi) alih-alih mengandalkan jumlah total baris.
 
-### Belum tercakup (lihat [Roadmap](#-roadmap))
+### Belum tercakup
 
-- Test untuk controller lain (Vehicles, Drivers, Users, VehicleServices, ActivityLogs, Reports).
 - Frontend (Jasmine/Karma) — belum ada test maupun workflow CI untuk frontend.
+- Beberapa method minor pada `Auth` dan `Bookings` yang belum ke-exercise langsung oleh test manapun (lihat laporan coverage lewat `vendor\bin\phpunit --coverage-text` untuk detail baris yang belum tercakup).
 
 ---
 
@@ -432,15 +457,15 @@ Fitur yang sudah selesai dan yang direncanakan untuk pengembangan selanjutnya:
 - [x] Riwayat aktivitas (activity log) yang dapat dilihat di UI
 - [x] Riwayat service kendaraan (bukan hanya jadwal berikutnya)
 - [x] Notifikasi in-app (lonceng floating, badge, auto-refresh 30 detik)
-- [x] Testing awal (PHPUnit) — feature test untuk validasi bentrok jadwal dan alur approval berjenjang (25 test, lihat [Testing & CI](#-testing--ci))
+- [x] Testing awal (PHPUnit) — feature test untuk validasi bentrok jadwal dan alur approval berjenjang
 - [x] **CI (GitHub Actions)** — PHPUnit dijalankan otomatis di setiap push/pull request, lengkap badge status build di README
+- [x] **Perluas cakupan backend** ke seluruh controller (Auth, Bookings, Approvals, Vehicles, Drivers, Users, ActivityLogs, VehicleServices, Reports) — total 143 test, semua lulus (lihat [Testing & CI](#-testing--ci))
 
 ### Direncanakan — Testing
 
-- [ ] **Perluas cakupan backend** ke controller lain (Vehicles, Drivers, Users, VehicleServices, ActivityLogs, Reports) serta endpoint `/auth/change-password`.
 - [ ] **Frontend — Jasmine/Karma** (bawaan Angular CLI lewat `ng test`): unit test untuk logic komponen yang sudah memakai signals/computed (mis. `filteredBookings`, `barStyle` di halaman Kalender, `nextServiceFor` di halaman Kendaraan), serta pengujian rendering kondisional (`@if`/`@for`) pada template.
 - [ ] Tambahkan job frontend (`ng test`) ke workflow CI yang sudah ada, agar backend dan frontend tervalidasi otomatis dalam satu pipeline.
-- [ ] Manfaatkan laporan code coverage (`vendor\bin\phpunit --coverage-text`) yang kini sudah bisa dijalankan berkat Xdebug aktif di CI, untuk mengidentifikasi bagian kode yang belum tercakup test.
+- [ ] Tutup sisa method minor pada `Auth` & `Bookings` yang belum tercakup, menuju coverage backend mendekati 100%.
 
 ### Direncanakan — Keamanan
 
@@ -467,7 +492,7 @@ Terjadi ketika ada teks tidak sengaja tertinggal di atas baris `<?php`/`namespac
 Migration untuk tabel tersebut belum dijalankan atau gagal karena error sintaks (lihat poin di atas). Jalankan ulang `php spark migrate` setelah memastikan file migration bersih.
 
 **`Class "App\Models\NamaModel" not found`**
-File model belum dibuat, namanya tidak sama persis dengan class-nya, atau berada di folder yang salah. CodeIgniter 4 memakai autoload PSR-4 — nama file **harus** sama persis dengan nama class (mis. `FuelLogsModel.php` berisi `class FuelLogsModel extends Model`) dan berada di `app/Models/`. Untuk namespace baru di folder `tests/` (mis. `Tests\Support\...`), jalankan `composer dump-autoload` agar autoloader ikut diperbarui.
+File model belum dibuat, namanya tidak sama persis dengan class-nya, atau berada di folder yang salah. CodeIgniter 4 memakai autoload PSR-4 — nama file **harus** sama persis (termasuk huruf besar/kecil) dengan nama class (mis. `FuelLogsModel.php` berisi `class FuelLogsModel extends Model`) dan berada di `app/Models/`. Kesalahan kecil seperti `reportstest.php` vs `ReportsTest.php` juga membuat PHPUnit gagal menemukan test class-nya (muncul sebagai `No tests executed!`, bukan error yang jelas). Untuk namespace baru atau setelah rename file di folder `tests/` (mis. `Tests\Support\...`, `Tests\Feature\...`), jalankan `composer dump-autoload` agar autoloader ikut diperbarui.
 
 **Endpoint mengembalikan data tidak lengkap (field kosong/`null`) padahal tabel lain punya datanya**
 Periksa apakah method controller terkait melakukan `JOIN` ke tabel relasi (`vehicles`, `drivers`, `users`, `fuel_logs`, dsb) menggunakan query builder, atau hanya memanggil `$model->find($id)` yang cuma mengambil baris mentah dari satu tabel. Method `index()` dan `show()` pada controller yang sama seringkali perlu pola query yang identik agar hasilnya konsisten.
@@ -525,6 +550,9 @@ Ini hanya warning, bukan kegagalan test — muncul karena Xdebug (atau PCOV) bel
 
 **Response `respond([...])` mengirim status code `200` walau body-nya berisi `"status": 201`/`404`/dst**
 `$this->respond($data, $statusCode)` di CodeIgniter menentukan HTTP status code lewat **argumen kedua**, bukan dari isi array `$data`. Kalau argumen kedua tidak diisi, status code HTTP asli tetap `200` meskipun body JSON menyebut angka lain — ini gampang lolos dari pengecekan manual karena body-nya "kelihatan" benar. Pastikan endpoint yang seharusnya mengembalikan `201 Created`, `404 Not Found`, dsb memanggil `respond($data, $kodeStatusnya)` secara eksplisit, dan verifikasi lewat test yang memeriksa HTTP status code asli (bukan cuma isi body).
+
+**Endpoint export file (mis. Excel) menyebabkan seluruh test PHPUnit berhenti mendadak di tengah run**
+Terjadi jika controller memanggil `exit;` atau `die;` setelah menulis response secara manual (`header()` + `echo`/`php://output`). Karena `FeatureTestTrait` menjalankan endpoint di proses PHP yang sama dengan PHPUnit (bukan proses terpisah), `exit;` ikut mematikan seluruh proses test — bukan cuma test untuk endpoint tersebut. Ganti dengan mengembalikan response lewat object resmi CodeIgniter (`return $this->response->setHeader(...)->setBody($content);`), yang bisa ditangkap dengan benar oleh `TestResponse` tanpa menghentikan proses.
 
 **Workflow CI tidak kepicu setelah push, padahal ada perubahan**
 Workflow `backend-tests.yml` dibatasi dengan filter `paths: - 'vehicle-booking/**'` — hanya jalan otomatis kalau ada file yang berubah **di dalam folder backend**. Perubahan pada file di luar folder itu (mis. hanya mengedit workflow-nya sendiri di `.github/workflows/`, atau file di frontend) tidak akan memicu run baru secara otomatis. Untuk menjalankan tanpa menunggu perubahan di folder backend, gunakan trigger manual lewat tab **Actions → Backend Tests → Run workflow** (tersedia karena workflow ini juga mendaftarkan event `workflow_dispatch`).

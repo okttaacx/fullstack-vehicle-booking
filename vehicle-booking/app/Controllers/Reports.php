@@ -35,21 +35,11 @@ class Reports extends Controller
         $sheet->setTitle("Laporan Pemesanan");
 
         $headers = [
-            "A1" => "Kode Booking",
-            "B1" => "Kendaraan",
-            "C1" => "Plat Nomor",
-            "D1" => "Driver",
-            "E1" => "Pemohon",
-            "F1" => "Keperluan",
-            "G1" => "Tujuan",
-            "H1" => "Tanggal Mulai",
-            "I1" => "Tanggal Selesai",
-            "J1" => "Status",
-            "K1" => "Odometer Awal (km)",
-            "L1" => "Odometer Akhir (km)",
-            "M1" => "Jarak Tempuh (km)",
-            "N1" => "BBM Terisi (liter)",
-            "O1" => "Catatan Selesai",
+            "A1" => "Kode Booking", "B1" => "Kendaraan", "C1" => "Plat Nomor",
+            "D1" => "Driver", "E1" => "Pemohon", "F1" => "Keperluan",
+            "G1" => "Tujuan", "H1" => "Tanggal Mulai", "I1" => "Tanggal Selesai",
+            "J1" => "Status", "K1" => "Odometer Awal (km)", "L1" => "Odometer Akhir (km)",
+            "M1" => "Jarak Tempuh (km)", "N1" => "BBM Terisi (liter)", "O1" => "Catatan Selesai",
         ];
 
         foreach ($headers as $cell => $label) {
@@ -99,17 +89,15 @@ class Reports extends Controller
 
         $writer = new Xlsx($spreadsheet);
 
-        // Membersihkan output buffer dari "sampah" teks sebelum mencetak file
-        if (ob_get_length()) {
-            ob_end_clean();
-        }
-
-        header("Access-Control-Allow-Origin: http://localhost:4200");
-        header("Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        header("Content-Disposition: attachment; filename=\"{$filename}\"");
-        header("Cache-Control: max-age=0");
-
+        ob_start();
         $writer->save("php://output");
-        exit;
+        $fileContent = ob_get_clean();
+
+        return $this->response
+            ->setHeader("Access-Control-Allow-Origin", "http://localhost:4200")
+            ->setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            ->setHeader("Content-Disposition", "attachment; filename=\"{$filename}\"")
+            ->setHeader("Cache-Control", "max-age=0")
+            ->setBody($fileContent);
     }
 }

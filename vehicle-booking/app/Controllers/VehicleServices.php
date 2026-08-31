@@ -79,7 +79,7 @@ class VehicleServices extends ResourceController
             "status"  => 201,
             "message" => "Catatan service berhasil ditambahkan",
             "data"    => ["id" => $id],
-        ]);
+        ], 201);
     }
 
     // PUT /api/vehicle-services/{id}

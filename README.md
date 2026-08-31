@@ -1,4 +1,4 @@
-<div align="center">
+\<div align="center">
 
 # 🚗 Vehicle Booking System
 
@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/CodeIgniter-4.7-EF4223?style=for-the-badge&logo=codeigniter&logoColor=white" />
   <img src="https://img.shields.io/badge/Angular-21-DD0031?style=for-the-badge&logo=angular&logoColor=white" />
   <img src="https://img.shields.io/badge/MySQL-8.x-4479A1?style=for-the-badge&logo=mysql&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-143%20passing-16A34A?style=for-the-badge&logo=php&logoColor=white" />
+  <img src="https://img.shields.io/badge/Tests-152%20passing-16A34A?style=for-the-badge&logo=php&logoColor=white" />
   <img src="https://img.shields.io/badge/Status-Active-16A34A?style=for-the-badge" />
 </p>
 
@@ -391,7 +391,7 @@ Backend punya feature test (PHPUnit) yang jalan lewat endpoint HTTP asli — buk
 | `tests/Feature/VehicleServicesTest.php` | Riwayat service per kendaraan, endpoint `upcoming` (filter status `scheduled` & join data kendaraan), CRUD catatan service, activity log |
 | `tests/Feature/ReportsTest.php` | Export laporan ke Excel — header response (`Content-Type`, `Content-Disposition`), isi kolom sesuai data booking, fallback `"-"` untuk data kosong, odometer & jarak tempuh setelah booking selesai, filter rentang tanggal |
 
-Total **143 test, 288 assertion**, semuanya lulus. Seluruh 9 controller backend (`Auth`, `Bookings`, `Approvals`, `Vehicles`, `Drivers`, `Users`, `ActivityLogs`, `VehicleServices`, `Reports`) sudah punya feature test.
+Total **152 test, 304 assertion**, semuanya lulus. Seluruh 9 controller backend (`Auth`, `Bookings`, `Approvals`, `Vehicles`, `Drivers`, `Users`, `ActivityLogs`, `VehicleServices`, `Reports`) sudah punya feature test, dengan code coverage keseluruhan **85.25% methods / 87.45% lines** (`Auth`, `Approvals`, `Vehicles`, `Drivers`, `Users`, `ActivityLogs`, `VehicleServices`, `Reports` sudah 100% methods & lines; `Bookings` di 87.50% methods / 96.46% lines).
 
 ### Menjalankan test secara lokal
 
@@ -459,17 +459,17 @@ Fitur yang sudah selesai dan yang direncanakan untuk pengembangan selanjutnya:
 - [x] Notifikasi in-app (lonceng floating, badge, auto-refresh 30 detik)
 - [x] Testing awal (PHPUnit) — feature test untuk validasi bentrok jadwal dan alur approval berjenjang
 - [x] **CI (GitHub Actions)** — PHPUnit dijalankan otomatis di setiap push/pull request, lengkap badge status build di README
-- [x] **Perluas cakupan backend** ke seluruh controller (Auth, Bookings, Approvals, Vehicles, Drivers, Users, ActivityLogs, VehicleServices, Reports) — total 143 test, semua lulus (lihat [Testing & CI](#-testing--ci))
+- [x] **Perluas cakupan backend** ke seluruh controller (Auth, Bookings, Approvals, Vehicles, Drivers, Users, ActivityLogs, VehicleServices, Reports) — total 152 test, semua lulus, coverage 85.25% methods / 87.45% lines (lihat [Testing & CI](#-testing--ci))
+- [x] **Rate limiting pada endpoint login & ganti password** — memanfaatkan `Throttler` bawaan CodeIgniter 4, membatasi 5 percobaan gagal per menit per alamat IP (berlaku lintas username, mencegah brute-force dari satu sumber IP). Diverifikasi otomatis lewat `AuthTest.php`.
 
 ### Direncanakan — Testing
 
 - [ ] **Frontend — Jasmine/Karma** (bawaan Angular CLI lewat `ng test`): unit test untuk logic komponen yang sudah memakai signals/computed (mis. `filteredBookings`, `barStyle` di halaman Kalender, `nextServiceFor` di halaman Kendaraan), serta pengujian rendering kondisional (`@if`/`@for`) pada template.
 - [ ] Tambahkan job frontend (`ng test`) ke workflow CI yang sudah ada, agar backend dan frontend tervalidasi otomatis dalam satu pipeline.
-- [ ] Tutup sisa method minor pada `Auth` & `Bookings` yang belum tercakup, menuju coverage backend mendekati 100%.
+- [ ] Tutup sisa 1 method minor pada `Bookings` yang belum tercakup, menuju coverage backend 100%.
 
 ### Direncanakan — Keamanan
 
-- [ ] **Rate limiting pada endpoint login** — mencegah percobaan brute-force dengan membatasi jumlah percobaan gagal per IP/username dalam rentang waktu tertentu (memanfaatkan `Throttler` bawaan CodeIgniter 4).
 - [ ] **Validasi & sanitasi input lebih ketat** — menerapkan `Validation` service bawaan CodeIgniter secara konsisten di seluruh controller (saat ini sebagian besar masih validasi manual per field), serta memastikan seluruh query tetap memakai Query Builder/parameter binding untuk mencegah SQL injection.
 - [ ] **Autentikasi berbasis token (JWT)** — menggantikan pola login sederhana saat ini (session disimpan di browser tanpa token bertanda tangan) dengan token yang memiliki masa berlaku dan dapat diverifikasi di setiap request API, sekaligus memungkinkan penerapan middleware otorisasi per-role yang lebih ketat.
 - [ ] **HTTPS & security headers** saat deployment produksi (HSTS, CSP, `X-Frame-Options`, dsb).
